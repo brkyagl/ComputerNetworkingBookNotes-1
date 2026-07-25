@@ -157,3 +157,61 @@ Yazarların notu şöyle bize: Eğer şu an bunların hepsi kafanı karıştır�
 
 "Socket interface" kavramı şimdilik soyut gelebilir, ama ileride göreceğiz ki bu aslında **API (Application Programming Interface)** demek. Yani uygulamanın işletim sistemine "şu IP'ye, şu porta, şu data'yı gönder" demesinin standart yolu. Production'da bir uygulama bağlantı sorunu yaşıyorsa, ilk bakacağın yer socket seviyesidir: `netstat`, `ss`, `lsof` komutlarıyla hangi socket'lerin hangi durumda (LISTEN, ESTABLISHED, TIME_WAIT) olduğunu kontrol edersin. Mülakatlarda "socket ne demek?" diye sorarlarsa, "application ile transport layer arasındaki arayüz" diyeceksin. TCP socket = IP + Port kombinasyonudur. Unutmamak lazım gerçekten önemli.
 
+# 1.1.3 Nedir Ya Bu Protocol?
+
+Artık Internet'in ne olduğu hakkında biraz fikrimiz var, şimdi computer networking'teki diğer önemli buzzword'ü ele alalım: **protocol**. Protocol nedir? Protocol ne yapar?
+
+## Kitaptaki İnsan Analojisi
+
+Computer network protocol kavramını anlamanın en kolay yolu, önce bazı **insan diyaloglarını** düşünmek olabilir, çünkü biz insanlar da sürekli protocol'ler icra ediyoruz.
+
+Birine saat sorarken ne yaptığınızı düşünün. İnsan protocol (veya en azından iyi davranışlar) diyor ki, önce bir selamlaşma yapmalısın — ilk **"Merhaba"** gibi, başka biriyle iletişimi başlatmak için. **"Merhaba"**'ya tipik yanıt ise karşılıklı bir **"Merhaba"** mesajıdır. Örtük olarak, samimi bir **"Merhaba"** yanıtı, saat sorabileceğinizin işaretidir. İlk **"Merhaba"**'ya farklı bir yanıt (örneğin **"Rahatsız etme beni!"** veya **"Abe ben suri no turkish,"** veya bazı yazılamayacak yanıtlar) ise iletişime isteksizlik veya yetersizlik belirtebilir. Bu durumda human protocol, o kişiden saat sormamak olurdu. Bazen bir soruya hiç yanıt alınmaz, bu durumda tipik olarak o kişiden saat sormaktan vazgeçilir. İnsan protocol'ümüzde, **gönderdiğimiz spesifik mesajlar** ve **alıcı yanıt mesajlarına veya diğer olaylara karşı aldığımız spesifik aksiyonlar** (örneğin belirli bir süre içinde yanıt gelmemesi) vardır. Açıkça, iletilen ve alınan mesajlar, bu mesajlar gönderildiğinde ve alındığında veya diğer olaylar gerçekleştiğinde alınan aksiyonlar, bir insan protocol'de merkezi rol oynar. Eğer insanlar farklı protocol'ler çalıştırırsa (örneğin biri nazik ama diğeri değilse, veya biri zaman kavramını anlıyor ama diğeri anlamıyorsa), protocol'ler birbiriyle çalışmaz ve hiçbir faydalı iş yapılamaz. Networking'te de aynı şey geçerlidir — bir görevi tamamlamak için aynı protocol'ü çalıştıran iki (veya daha fazla) iletişim kuran varlık gerekir.
+
+İkinci bir insan analojisi düşünelim. Diyelim ki bir college class'tasınız (örneğin bir computer networking class'ı). Öğretmen protocol'ler hakkında gevezelik ediyor ve siz kafanız karışmış durumdasınız. Öğretmen durup soruyor: **"Sorusu olan var mı?"** (uyumayan tüm öğrencilere iletilen ve alınan bir mesaj). Siz elinizi kaldırıyorsunuz (öğretmene örtük bir mesaj iletiyorsunuz). Öğretmeniniz size gülümseyerek **"Evet . . ."** diyerek sizi onaylıyor (soru sormanızı teşvik eden iletilen bir mesaj), ve siz sonra sorunuzu soruyorsunuz (yani öğretmeninize mesajınızı iletiyorsunuz). Öğretmeniniz sorunuzu duyuyor (soru mesajınızı alıyor) ve cevaplıyor (size bir yanıt iletiyor). Bir kez daha görüyoruz ki, mesajların iletimi ve alımı, ve bu mesajlar gönderildiğinde ve alındığında alınan reaksiyonlar seti, bu question-and-answer protocol'ünün kalbinde yer alır.
+
+
+## İnsan Protocol'ü ve Computer Network Protocol'ü
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│   Sol Taraf: İnsan                        Sağ Taraf: Computer Network       │
+│                                                                             │
+│                                                                             │
+│   👩 Alice                               💻 Client Computer                 │
+│      │                                      │                               │
+│      │  "Merhaba"                           │  TCP connection request       │
+│      │ ───────────────────────────────►     │ ─────────────────────────►    │
+│      │                                      │         🖥️ Web Server         │
+│      │  "Merhaba"                           │                               │
+│      │ ◄───────────────────────────────     │    TCP connection reply       │
+│      │                                      │ ◄─────────────────────────    │
+│      │                                      │                               │
+│      │  "Saat kaç?"                         │  GET http://www.test-         │
+│      │ ───────────────────────────────►     │  test.com/network/            │
+│      │                                      │ ─────────────────────────►    │
+│      │                                      │                               │
+│      │  "10:00"                             │  <file>                       │
+│      │ ◄───────────────────────────────     │ ◄─────────────────────────    │
+│      │                                      │                               │
+│   Time ▼                                  Time ▼                            │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+## Network Protocols
+
+Bir **network protocol**, bir insan protocol'üne benzer, tek farkı mesaj exchange eden ve aksiyon alan varlıkların bir cihazın hardware veya software component'leri olmasıdır (örneğin computer, akıllı telefon, tablet, router veya diğer network-capable device). Internet'te iki veya daha fazla iletişim kuran remote varlığı içeren tüm aktivite, bir protocol tarafından yönetilir. Örneğin, fiziksel olarak bağlı iki computer'daki **hardware-implemented protocols**, iki network interface card arasındaki **"tel"** üzerindeki bit akışını kontrol eder; end systems'teki **congestion-control protocols**, sender ve receiver arasındaki packet'lerin iletim hızını kontrol eder; router'lardaki protocol'ler bir packet'in kaynaktan hedefe olan path'ini belirler. Protocol'ler Internet'in her yerinde çalışır, ve dolayısıyla bu okuduğumuz kitaptaki konuların büyük bir kısmı computer network protocols hakkındadır.
+
+Muhtemelen aşina olduğunuz bir computer network protocol örneği olarak, bir Web server'a request yaptığınızda ne olduğunu düşünün; yani bir Web sayfasının URL'sini Web browser'ınıza yazdığınızda.
+İlk olarak, computer'ınız Web server'a bir **connection request message** gönderir ve bir yanıt bekler. Web server sonunda connection request mesajınızı alır ve bir **connection reply message** döndürür. Artık Web dokümanını request etmenin OK olduğunu bilen computer'ınız, o Web server'dan fetch etmek istediği Web sayfasının adını bir **GET message** içinde gönderir. Son olarak, Web server Web sayfasını (**file**) computer'ınıza döndürür.
+
+Yukarıdaki insan ve networking örnekleri göz önüne alındığında, mesajların exchange'i ve bu mesajlar gönderildiğinde ve alındığında alınan aksiyonlar, bir protocol'ün temel tanımlayıcı elementleridir:
+
+> **Bir *protokol*, iki veya daha fazla iletişim kuran varlık arasında exchange edilen mesajların biçimini ve sırasını, ayrıca bir mesajın veya başka bir olayın iletilmesi ve/veya alınması sırasında gerçekleştirilen eylemleri tanımlar.**
+
+Internet ve genel olarak computer networks, protocol'leri yoğun şekilde kullanır. Farklı iletişim görevlerini tamamlamak için farklı protocol'ler kullanılır.
+
+Sınavda falan "Protocol nedir?" diye sorarlarsa, tam olarak bu cümleyi akla getir: *“Bir protokol, mesajların biçimini ve sırasını ile iletim/alınma sırasında gerçekleştirilen işlemleri tanımlar.”* Ayrıca şuna dikkat et: şema sağ taraf aslında **TCP Three-Way Handshake**'in basitleştirilmiş halidir. Client SYN gönderir, Server SYN-ACK döner, Client ACK gönderir — ama burada kitapta sadece "connection request" ve "connection reply" diyor. 
+
+Şimdilik bil ki: Protocol = format + order + actions. Bu üçlüyü unutma.
