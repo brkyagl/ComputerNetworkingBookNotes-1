@@ -215,3 +215,77 @@ Internet ve genel olarak computer networks, protocol'leri yoğun şekilde kullan
 Sınavda falan "Protocol nedir?" diye sorarlarsa, tam olarak bu cümleyi akla getir: *“Bir protokol, mesajların biçimini ve sırasını ile iletim/alınma sırasında gerçekleştirilen işlemleri tanımlar.”* Ayrıca şuna dikkat et: şema sağ taraf aslında **TCP Three-Way Handshake**'in basitleştirilmiş halidir. Client SYN gönderir, Server SYN-ACK döner, Client ACK gönderir — ama burada kitapta sadece "connection request" ve "connection reply" diyor. 
 
 Şimdilik bil ki: Protocol = format + order + actions. Bu üçlüyü unutma.
+
+---
+
+# 1.2 The Network Edge
+
+Önceki konularda, Internet ve networking protocol'lerinin high-level önbakışını sunduk. Şimdi Internet'in component'lerine biraz daha derinlemesine dalacağız. 
+Bu konuda network'ün **edge**'inden başlayacağız ve en tanıdık olduğumuz component'lere bakacağız — yani günlük hayatta kullandığımız computer'lar, akıllı telefon'lar ve diğer cihazlar. 
+Bir sonraki konuda da network edge'den network core'a geçeceğiz ve computer networks'teki switching ve routing'i inceleyeceğiz.
+
+Önceki konudan hatırlayın: computer networking jargonunda, Internet'e bağlı computer'lar ve diğer cihazlar sıklıkla **end systems** olarak adlandırılır. 
+Bunlara **end systems** denir çünkü Internet'in **edge**'inde yer alırlar. Internet'in end systems'leri arasında desktop computer'lar (örneğin desktop PC'ler, Mac'ler ve Linux box'lar), server'lar (örneğin Web ve e-mail server'ları) ve mobile devices (örneğin laptop'lar, akıllı telefon'lar ve tablet'ler) bulunur.
+
+## End-System Etkileşimleri
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│   ┌──────────────┐                                                          │
+│   │ Mobile       │     ┌─────────────────────────────────────               │
+│   │ Network      │     │      National or Global ISP        │               │
+│   │  📱 🚗 🚦    │     │    (◯)────(◯)────(◯)               │               │ 
+│   │     ⬆️       │     │      │      │      │               │               │
+│   │   (◯)────────┼─────┼──────┼──────┼──────┼───────────────┤               │
+│   └──────────────┘     │      │      │      │               │               │
+│                        │      │      │      │               │               │
+│   ┌──────────────┐     │  ┌───┴───┐  │      │  ┌────────────┴────┐          │
+│   │ Home         │     │  │ Local │  │      │  │ Datacenter      │          │
+│   │ Network      │     │  │ or    │  │      │  │ Network         │          │
+│   │ [💻📱🌡️🧊]   │     │  │Regional│ │      │  │  [🖥️🖥️]         │          │
+│   │    (◯)───────┼─────┘  │ ISP   │  │      │  │     │           │           │
+│   └──────────────┘        │ (◯)   │  │      │  │  (◯)            │           │
+│                           └───┬───┘  │      │  └─────────────────┘           │
+│                               │      │      │                                │
+│   ┌──────────────────┐        │      │      │      ┌────────────────────┐    │
+│   │ Enterprise       │        │      │      │      │ Content Provider   │    │
+│   │ Network          │        │      │      │      │ Network            │    │
+│   │ [💻💻💻📱📱🖥️]   │       │      │      │      │  (◯)                │   │
+│   │    (◯)──(◯)──(◯)│         │      │      │      └────────────────────┘    │
+│   └──────────────────┘        │      │      │                                │
+│                               │      │      │                                │
+│                               └──────┴──────┘                                │
+│                                                                              │
+│   ═══════════════════════════════════════════════════════════════════════    │
+│                                                                              │
+│   End-System: Bir laptop (Mobile Network) ile bir server                     │
+│   (Content Provider Network / Datacenter) arasındaki iletişim yolu.          │
+│   Paket edge'den (end system) core'a (ISP'ler) doğru ilerler.                │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+Ayrıca, giderek artan sayıda geleneksel olmayan "nesneler" de end systems olarak Internet'e bağlanıyor...
+
+End systems aynı zamanda **hosts** olarak da adlandırılır, çünkü **host** (yani çalıştırır) application program'ları: Web browser programı, Web server programı, e-mail client programı veya e-mail server programı gibi **hosts** ve **end systems** terimlerini birbirinin yerine kullanacağız; yani **host = end system**. Host'lar bazen daha da iki kategoriye ayrılır: **clients** ve **servers**. Informal olarak, client'lar tipik olarak desktop'lar, laptop'lar, akıllı telefon'lar ve benzeri cihazlarken, server'lar Web sayfalarını depolayan ve dağıtan, video stream eden, e-mail relay eden ve daha fazlasını yapan daha güçlü makinelerdir. Bugün, search results, e-mail, Web sayfaları, videolar ve mobile app content aldığımız çoğu server, büyük **data centers**'ta bulunur. Örneğin, Google'ın küresel altyapısı 2024 sonları itibarıyla 33 veri merkezine sahipken, 2026 yılı itibarıyla 4 kıtada toplam 35 Data Center ve 40 Cloud bölgesine ulaşmıştır.
+
+## Data Centers and Cloud Computing
+
+Google, Microsoft, Amazon ve Alibaba gibi Internet şirketleri, her birinde on binlerce ila yüz binlerce host barındıran devasa data center'lar inşa etmiştir. Bu data center'lar sadece şemalarda gösterildiği gibi Internet'e bağlı değil, aynı zamanda data center'ın host'larını birbirine bağlayan karmaşık computer networks'leri de dahili olarak içerirler. Data center'lar, günlük hayatta kullandığımız Internet applications'ların arkasındaki motorlardır.
+
+Genel olarak konuşursak, data center'lar üç amaca hizmet eder; bunları somutluk için Amazon bağlamında açıklayalım:
+
+1. **Amazon e-commerce pages**'ini kullanıcılara sunarlar; örneğin ürünleri açıklayan sayfalar ve satın alma bilgileri.
+2. Amazon-spesifik data processing tasks için **büyük ölçekli paralel hesaplama altyapısı** olarak hizmet ederler.
+3. Diğer şirketlere **cloud computing** sağlarlar.
+
+Bugün, computing'teki önemli bir trend, şirketlerin IT ihtiyaçlarının hepsini Amazon gibi bir cloud provider kullanarak karşılamasıdır. 
+Örneğin, Airbnb ve diğer birçok Internet-based şirket kendi data center'larını sahip olmaz ve yönetmez, bunun yerine tüm Web-based servislerini Amazon cloud'unda, yani **Amazon Web Services (AWS)**'de çalıştırır.
+
+Bir data center'daki işçi arılar host'lardır. İçerik sunarlar (örneğin Web sayfaları ve videolar), e-mail ve dokümanları depolarlar, ve toplu olarak büyük ölçekli distributed hesaplamalar gerçekleştirirler. 
+Data center'lardaki host'lara **blades** denir ve pizza kutularına benzerler; genellikle CPU, memory ve disk storage içeren commodity host'lardır. 
+Host'lar **raf**'lara istiflenir ve her raf tipik olarak 20 ila 40 blade içerir. Raflar daha sonra gelişmiş ve gelişen data center network designs kullanılarak birbirine bağlanır.
+
+Bu arada şunların üstünde duralım: **Host = End System**. Kitap bunu birbiri yerine kullanıyor, Ee biz de öyle kullanacağız. Ayrıca **Client vs Server** ayrımı informal — yani katı bir kural değil. Bir laptop client olabilir ama üzerinde bir Web server çalıştırırsan server da olur. Production'da "edge computing" konsepti var, artık client'lar da işlem yapıyor. Data center konusunda ise referans önemli: Google'ın 35 data center'ı ve milyonlarca server'ı var. Bu, "ölçek" kavramını anlamak için kritik. Cloud computing (AWS, Azure, GCP) demek, senin fiziksel server'ın yok ama bu devasa data center'lardaki virtual machine'leri kullanıyorsun demek. Sınavda "cloud nedir?" diye sorarlarsa, "başkasının data center'ındaki kaynakları kiralamak" diyeceğiz. Ayrıca **blade** terimini unutma: data center'daki ince, pizza kutusu şeklindeki server'lara denir. Raf başı 20-40 blade, bu da hesaplama gücünün ne kadar yoğun olduğunu gösterir.
+
