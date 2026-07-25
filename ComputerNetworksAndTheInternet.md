@@ -109,5 +109,51 @@ Diğer kuruluşlar da network component'leri için standartlar belirler; en dikk
        │ Switch  │  
        └─────────┘  
        
- 
 ```
+
+# 1.1.2 A Services Description
+
+Yukarıdaki tartışmamız Internet'i oluşturan birçok parçayı tanımladı. Ama Internet'i tamamen farklı bir açıdan da tanımlayabiliriz — yani **applications'a hizmet veren bir altyapı** olarak.
+
+Geleneksel uygulamaların yanı sıra (e-mail ve Web gibi), Internet applications arasında şunlar da var: mobile smartphone ve tablet applications, Internet messaging, real-time road-traffic information ile mapping, music streaming, movie ve television streaming, online social media, video conferencing, multi-person games ve location-based recommendation systems. Bu uygulamalara **distributed applications** denir, çünkü birbiriyle data exchange eden multiple end systems içerirler.
+
+Burası kritik aslında canlar, **Internet applications end systems'te çalışır** — network core'daki packet switches'te çalışmazlar. Packet switches end systems arası data exchange'i kolaylaştırır, ama data'nın kaynağı veya hedefi olan application ile ilgilenmezler. Bu, sınavlarda sık sorulan bir ayrımdır: "Application katmanı nerede çalışır?" Cevap: **End system'lerde (host'larda)**, router'larda değil!
+
+## Hizmet Veren Altyapı
+
+Peki "applications'a hizmet veren bir altyapı" tam olarak ne demek? Diyelim ki insanlığa büyük fayda sağlayacak veya seni zengin ve ünlü yapacak harika bir distributed Internet application fikrin var. Bu fikri gerçek bir Internet application'ına nasıl dönüştürürsün?
+
+Application'lar end systems'te çalıştığı için, end systems'te çalışan programlar yazman gerekir. Örneğin programlarını **Java**, **C** veya **Python**'da yazabilirsin. Ama distributed bir Internet application geliştirdiğin için, farklı end systems'te çalışan programların birbirine **data göndermesi** gerekir.
+
+İşte burada merkezi bir konuya geliyoruz — bu da Internet'i bir **application platformu** olarak tanımlamanın alternatif yoluna yol açıyor. Bir end system'de çalışan bir program, Internet'e başka bir end system'deki başka bir programa data teslim etmesi için **nasıl talimat verir?**
+
+## Socket Interface — Internet'in "Posta Servisi Interface"i
+
+Internet'e bağlı end systems, bir programın başka bir end system'deki spesifik hedef programına data göndermesi için nasıl istekte bulunduğunu belirleyen bir **socket interface** sağlar. 
+Bu Internet socket interface, gönderen programın uyması gereken bir **kurallar setidir** ki Internet data'yı hedef programına teslim edebilsin. 
+
+Şimdilik kitapta aşırı sık kullanılan basit bir analojisine bakalım: Alice, Bob'a posta servisiyle mektup göndermek istiyor. Alice, elbette mektubu (data) yazıp pencereden dışarı atamaz. Bunun yerine posta servisi şunları gerektirir:
+
+1. Mektubu zarfın içine koy
+2. Bob'un tam adını, adresini ve zip code'unu zarfın ortasına yaz
+3. Zarfı mühürle
+4. Pulu zarfın sağ üst köşesine yapıştır
+5. Zarfı resmi posta servisi posta kutusuna at
+
+Böylece posta servisinin kendi **"postal service interface"i** var — yani Alice'in uyması gereken kurallar seti ki mektup Bob'a ulaşsın. 
+Benzer şekilde Internet'in de bir **socket interface'i** var; data gönderen programın, Internet'e data'yı alıcı programa teslim etmesi için uyması gereken kurallar.
+
+## Internet'in Birden Fazla Hizmeti
+
+Posta servisi elbette müşterilerine birden fazla hizmet sunar: hızlı teslimat, teslim alma onayı, genel kullanım ve daha birçok hizmet. Benzer şekilde Internet de uygulamalarına **multiple services** sunar. 
+Bir Internet application geliştirdiğinde, uygulaman için Internet'in hizmetlerinden **birini seçmen** gerekir. 
+
+## İki Tanımı Birleştirmek
+
+Şu ana kadar Internet'in iki tanımını verdi bize network ustaları: biri hardware ve software bileşenleri açısından, diğeri distributed applications'a hizmet veren bir altyapı olarak. 
+Ama belki hâlâ kafa karışıktır: Packet switching nedir? TCP/IP nedir? Router nedir? Internet'te ne tür communication links var? Distributed application nedir? Bir termostat falan Internet'e nasıl bağlanır?
+
+Yazarların notu şöyle bize: Eğer şu an bunların hepsi kafanı karıştırıyorsa **endişelenme** — bu kitabın amacı hem Internet'in nuts-and-bolts'ını hem de nasıl ve neden çalıştığını yöneten prensipleri tanıtmaktır. 
+
+"Socket interface" kavramı şimdilik soyut gelebilir, ama ileride göreceğiz ki bu aslında **API (Application Programming Interface)** demek. Yani uygulamanın işletim sistemine "şu IP'ye, şu porta, şu data'yı gönder" demesinin standart yolu. Production'da bir uygulama bağlantı sorunu yaşıyorsa, ilk bakacağın yer socket seviyesidir: `netstat`, `ss`, `lsof` komutlarıyla hangi socket'lerin hangi durumda (LISTEN, ESTABLISHED, TIME_WAIT) olduğunu kontrol edersin. Mülakatlarda "socket ne demek?" diye sorarlarsa, "application ile transport layer arasındaki arayüz" diyeceksin. TCP socket = IP + Port kombinasyonudur. Unutmamak lazım gerçekten önemli.
+
