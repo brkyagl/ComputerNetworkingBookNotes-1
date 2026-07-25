@@ -289,3 +289,213 @@ Host'lar **raf**'lara istiflenir ve her raf tipik olarak 20 ila 40 blade içerir
 
 Bu arada şunların üstünde duralım: **Host = End System**. Kitap bunu birbiri yerine kullanıyor, Ee biz de öyle kullanacağız. Ayrıca **Client vs Server** ayrımı informal — yani katı bir kural değil. Bir laptop client olabilir ama üzerinde bir Web server çalıştırırsan server da olur. Production'da "edge computing" konsepti var, artık client'lar da işlem yapıyor. Data center konusunda ise referans önemli: Google'ın 35 data center'ı ve milyonlarca server'ı var. Bu, "ölçek" kavramını anlamak için kritik. Cloud computing (AWS, Azure, GCP) demek, senin fiziksel server'ın yok ama bu devasa data center'lardaki virtual machine'leri kullanıyorsun demek. Sınavda "cloud nedir?" diye sorarlarsa, "başkasının data center'ındaki kaynakları kiralamak" diyeceğiz. Ayrıca **blade** terimini unutma: data center'daki ince, pizza kutusu şeklindeki server'lara denir. Raf başı 20-40 blade, bu da hesaplama gücünün ne kadar yoğun olduğunu gösterir.
 
+# 1.2.1 Access Networks
+
+Network'ün "edge"indeki applications ve end systems'leri ele aldıktan sonra, şimdi **access network**'ü düşünelim — yani bir end system'i fiziksel olarak ilk router'a (aynı zamanda **"edge router"** olarak da bilinir) bağlayan network, bu router da end system'den başka herhangi bir uzak end system'e giden path üzerindedir.
+
+## Home Access: DSL, Cable, FTTH, Fixed Wireless, and LEO Satellites
+
+2023 itibarıyla, Avrupa ve ABD'deki hanelerin %80'inden fazlası Internet access'e sahip [OECD 2024], ancak dünya genelinde ve farklı demografik gruplar arasında bir dijital uçurum mevcut [globaldigitalinclusion 2025]. 
+Bu yaygın home access network kullanımı göz önüne alındığında, access networks önbakışına evlerin Internet'e nasıl bağlandığını inceleyerek başlayalım.
+
+Bugün, en yaygın üç geniş bantlı ev kullanımı access tipi **digital subscriber line (DSL)**, **cable** ve **fiber to the home (FTTH)**'dir.
+
+---
+
+## Access Networks
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│   ┌──────────────┐                                                          │
+│   │ Mobile       │     ┌─────────────────────────────────────┐              │
+│   │ Network      │     │      National or Global ISP         │              │
+│   │  📱 🚗 🚦    │     │    (◯)────(◯)────(◯)                │              │
+│   │     ⬆️       │     │      │      │      │                │              │
+│   │   (◯)════════╪═════╪══════╪══════╪══════╪═══════════════╪═══╗            │
+│   └──────────────┘     │      │      │      │               │   ║            │
+│                        │      │      │      │               │   ║            │
+│   ┌──────────────┐     │  ┌───┴───┐  │      │  ┌────────────┴───┴──┐         │
+│   │ Home         │     │  │ Local │  │      │  │ Datacenter        │         │
+│   │ Network      │     │  │ or    │  │      │  │ Network           │         │
+│   │ [💻📱🌡️🧊]   │     │  │Regional│ │      │  │  [🖥️🖥️]          │         │
+│   │    (◯)═══════╪═════╝  │ ISP   │  │      │  │     │            │         │
+│   └──────────────┘        │ (◯)   │  │      │  │  (◯)             │         │
+│                           └───┬───┘  │      │  └─────────────────┘          │
+│                               │      │      │                               │
+│   ┌──────────────────┐        │      │      │      ┌────────────────────┐   │
+│   │ Enterprise       │        │      │      │      │ Content Provider   │   │
+│   │ Network          │        │      │      │      │ Network            │   │
+│   │ [💻💻💻📱📱🖥️]   │        │      │      │     │  (◯)               │    │
+│   │    (◯)══(◯)══(◯)│         │      │      │     └────────────────────┘    │
+│   └──────────────────┘        │      │      │                               │
+│                               └──────┴──────┘                               │
+│                                                                             │
+│   ═══════ : Thick shaded lines = Access Networks                            │
+│   (Home, Enterprise, Mobile Wireless edge connections)                      │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+> Mobile Network, Home Network ve Enterprise Network'ten Local/Regional ISP'ye giden kalın gölgeli çizgiler access networks'ü temsil ediyor.
+
+## DSL Internet Access
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│    [Home phone]                                                             │
+│         │                                                                   │
+│         │                                                                   │
+│         ├────────────┐                                                      │
+│         │            │                                                      │
+│    [Splitter]◄───────┘                                                      │
+│         │                                                                   │
+│         │                                                                   │
+│    [DSL modem]                                                              │
+│         │                                                                   │
+│         │          Existing phone line (bakır tel)                          │
+│         └────────────────────────────────────────────────────────┐          │
+│                                                                  │          │
+│                                                                  ▼          │
+│                                                               [DSLAM]       │
+│                                                                 │           │
+│                                                                 │           │
+│                                                                 ▼           │
+│    [Home PC]◄──────────────────────────────────────────────────┘            │
+│                                                                             │
+│    Central Office (CO) ─────► [Telephone network] ─────► [Internet]         │
+│                                   (◯)────(◯)────(◯)                         │
+│                                                                             │
+│    DSLAM = Digital Subscriber Line Access Multiplexer                       │
+│    CO    = Telco'nun local central office'ı                                 │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+Bir ikamet yeri tipik olarak DSL Internet access'i, aynı yerel telefon şirketinden (telco) alır ki bu şirket wired local phone access'i de sağlar. 
+Böylece, DSL kullanıldığında, müşterinin telco'su aynı zamanda onun ISP'sidir. Şemada gösterildiği gibi her müşterinin DSL modem'i mevcut telephone line'ı kullanarak telco'nun local central office'inde (CO) bulunan bir **digital subscriber line access multiplexer (DSLAM)** ile data exchange eder. Evin DSL modem'i digital data'yı alır ve bunu CO'ya telephone wires üzerinden iletim için **high-frequency tones**'a çevirir; birçok evden gelen analog signals DSLAM'da tekrar digital formata çevrilir.
+
+ikamet yeri telephone line hem data hem de geleneksel telephone signals'i aynı anda taşır, bunlar farklı frekanslarda encode edilmiştir:
+
+- **High-speed downstream channel**, 50 kHz ila 1 MHz bandında
+- **Medium-speed upstream channel**, 4 kHz ila 50 kHz bandında
+- **Sıradan iki yönlü telefon kanalı**, 0 ila 4 kHz bandında
+
+Bu yaklaşım, tek DSL link'inin sanki üç ayrı link varmış gibi görünmesini sağlar, böylece bir telephone call ve bir Internet connection aynı anda DSL link'ini paylaşabilir.  
+Müşteri tarafında, bir **splitter** eve gelen data ve telephone signals'i ayırır ve data signal'ini DSL modem'e yönlendirir. 
+Telco tarafında, CO'da DSLAM data ve phone signals'i ayırır ve data signal'ini Internet'e gönderir. Yüzlerce veya binlerce hane tek bir DSLAM'e bağlanır.
+
+En son DSL standardı [ITU DSL 2019], kısa mesafelerde **1 Gbps'e kadar downstream** ve **500 Mbps'e kadar upstream** transmission rate sağlar. Downstream ve upstream rate'leri farklı olduğu için, access **asymmetric** (asimetrik) olarak adlandırılır. Gerçek downstream ve upstream transmission rate'leri, yukarıda belirtilen rate'lerden daha düşük olabilir, çünkü DSL sağlayıcılar farklı rate'leri farklı fiyatlarda sunduğundan ikamet yerinin rate'i bilerek sınırlayabilir. 
+Maksimum rate aynı zamanda ev ile CO arasındaki mesafe, twisted-pair line'ın kalınlığı ve elektriksel parazit derecesi tarafından da sınırlanır. 
+Mühendisler DSL'i ev ile CO arasındaki kısa mesafeler için özel olarak tasarlamıştır; genel olarak, eğer ikamet yerin CO'nun **5 ila 10 mil** içinde değilse, residence alternatif bir Internet access formuna başvurmak zorundadır.
+
+> DSL'in asimetrik olması çok önemli. Downstream (indirme) > Upstream (yükleme). Neden? Çünkü ev kullanıcısı genelde video izler, Web sayfası indirir — yani daha çok data alır. [ITU DSL 2019] standardını unutma, bu ITU-T G.fast ve benzeri standartları kapsar. Ayrıca "5-10 mil" kuralı: DSL elektrik sinyali taşıdığı için mesafe arttıkça zayıflar. Production'da bir kullanıcı "Internet yavaş" diyorsa, DSL ise ilk kontrol: CO'ya olan mesafe ve hat kalitesi. Splitter'ın olmaması telefon çalmalarında Internet'in kopmasına neden olur.
+
+## Hybrid Fiber-Coaxial Access Network
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│        Hundreds of homes          Hundreds of homes                         │
+│         🏠    🏠    🏠            🏠    🏠    🏠                            │
+│          │     │     │             │     │     │                            │
+│          └─────┼─────┘             └─────┼─────┘                            │
+│                │                         │                                  │
+│           [Coaxial cable]           [Coaxial cable]                         │
+│                │                         │                                  │
+│                │    ┌─────────────┐      │                                  │
+│                └────┤ Fiber node  ├─────┘                                   │
+│                     │  (Kavşak)   │                                         │
+│                     └──────┬──────┘                                         │
+│                            │                                                │
+│                         [Fiber cable]                                       │
+│                            │                                                │
+│                            ▼                                                │
+│                     ┌─────────────┐                                         │
+│                     │    CMTS     │                                         │
+│                     │(Cable Modem  │                                        │
+│                     │ Termination │                                         │
+│                     │   System)   │                                         │
+│                     └──────┬──────┘                                         │
+│                            │                                                │
+│                            ▼                                                │
+│    [Internet] ◄───────── [Cable head end]                                   │
+│       (◯)                                                                   │
+│                                                                             │
+│    HFC = Hybrid Fiber Coaxial                                               │
+│    CMTS = Cable Modem Termination System (DSL'deki DSLAM'in karşılığı)      │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+DSL, telco'nun mevcut local telephone altyapısını kullanırken, **cable Internet access** cable television şirketinin mevcut cable television altyapısını kullanır. Bir ikamet yeri, cable television'ı sağlayan aynı şirketten cable Internet access alır. Şemada gösterildiği gibi fiber optik kablo, head end'i yani başlık ucunu mahalle düzeyindeki kavşaklara bağlar, buradan geleneksel coaxial cable tek tek evlere ve dairelere ulaşır. 
+Her komşu kavşak tipik olarak **500 ila 5.000 hane**'yi destekler. Hem fiber hem de coaxial cable bu sistemde kullanıldığı için, bu sıklıkla **hybrid fiber coax (HFC)** olarak adlandırılır.
+
+Cable Internet access özel modem'ler gerektirir; bunlara **cable modem**'ler denir. DSL modem'inde olduğu gibi, cable modem tipik olarak harici bir cihazdır ve home PC'ye bir **Ethernet port** üzerinden bağlanır.
+Cable head end'de, **cable modem termination system (CMTS)** DSL network'ün DSLAM'ine benzer bir fonksiyon görür — birçok downstream home'dan cable modem'ler tarafından gönderilen analog signal'i tekrar digital formata çevirir. 
+Cable modem'ler HFC network'ünü iki channel'a ayırır: bir downstream ve bir upstream channel. DSL'de olduğu gibi, access tipik olarak **asymmetric**'tir; downstream channel genellikle upstream channel'dan daha yüksek transmission rate'e sahiptir. **DOCSIS 2.0** ve **3.0** standartları sırasıyla **40 Mbps ve 1.2 Gbps** downstream bitrate'leri ve **30 Mbps ve 100 Mbps** upstream rate'leri tanımlar. DSL network'lerinde olduğu gibi, maksimum gerçekleştirilebilir rate, daha düşük kısıtlı data rate'ler veya medya bozuklukları nedeniyle gerçekleşmeyebilir.
+
+Cable Internet access'in önemli bir karakteristiği, bunun bir **shared broadcast medium** olmasıdır. 
+Özellikle, head end tarafından gönderilen her packet downstream'ta her eve giden her link üzerinden travel eder; ve bir home tarafından gönderilen her packet upstream channel'da head end'e gider. 
+Bu nedenle, eğer birkaç kullanıcı aynı anda downstream channel'da bir video dosyası indiriyorsa, her kullanıcının aldığı gerçek rate, toplam cable downstream rate'inden önemli ölçüde daha düşük olacaktır. 
+Diğer yandan, eğer sadece birkaç aktif user varsa ve hepsi Web surfing yapıyorsa, o zaman her kullanıcı tam cable downstream rate'inde Web sayfaları alabilir, çünkü kullanıcılar nadiren tam olarak aynı anda bir Web sayfasına request ederler. 
+Upstream channel da shared olduğu için, transmissions'ı koordine etmek ve collisions'dan kaçınmak için bir **distributed multiple access protocol** gereklidir. 
+
+> İşte DSL vs Cable'in en kritik farkı burada: DSL **paylaşımsız** bir hat kullanır — senin hattın sana aittir, komşunun indirmesi seni etkilemez. Ama Cable **shared broadcast medium**'dur — tüm mahalle aynı coaxial cable'i paylaşır. Akşam prime time'da herkes Netflix açarsa, senin hızın düşer. Bu yüzden "contention ratio" (paylaşım oranı) çok önemli. Production'da bir kullanıcı "akşamları Internet yavaşlıyor" diyorsa ve Cable kullanıyorsa, sebep muhtemelen bu. DOCSIS 3.1 ve sonrasıyla bu biraz iyileşti ama fiziksel limit var. Ayrıca CMTS = DSLAM'in karşılığı, bunu unutma. Upstream shared olduğu için CSMA/CD veya benzeri distributed multiple access protocol kullanılır.
+
+## FTTH (Fiber to the Home)
+
+DSL ve cable network'ler şu anda ABD'deki ikametlerin geniş bant access'in çoğunluğunu temsil etse de, daha yüksek hızlar sağlayan yükselen bir teknoloji **fiber to the home (FTTH)**'dir [Fiber Broadband 2025 - https://fiberbroadband.org/2025/12/16/fiber-broadband-association-reports-historic-fiber-deployment-highs/]. İsmi de ima ettiği gibi, FTTH konsepti basittir — CO'dan doğrudan eve bir **optical fiber path** sağlar. FTTH potansiyel olarak **gigabits per second** aralığında Internet access rate'leri sağlayabilir.
+
+CO'dan evlere optical distribution için birkaç rekabetçi teknoloji vardır. En basit optical distribution network, her ev için CO'dan bir fiber çıkaran **direct fiber**'dir. 
+Daha yaygın olarak, CO'dan çıkan her fiber aslında birçok ev tarafından paylaşılır; fiber, evlere nispeten yaklaşana kadar müşteriye özel ayrı fiber bağlantılarına bölünmez. 
+Bu splitting'i gerçekleştiren iki rekabetçi optical-distribution network mimarisi vardır: **active optical networks (AONs)** ve **passive optical networks (PONs)**. AON temelde switched Ethernet'tir, ki bu ileride tartışılacaktır.
+
+Burada, Verizon'un FiOS servisinde kullanılan **PON**'u kısaca tartışalım. Aşağıdaki şema PON distribution mimarisini kullanarak FTTH'yi gösteriyor. 
+Her evin bir **optical network terminator (ONT)**'si vardır, bu özel optical fiber ile bir komşu splitter'a bağlıdır. Splitter, birkaç evi (tipik olarak **100'den az**) tek bir shared optical fiber üzerinde birleştirir, bu fiber telco'nun CO'sundaki bir **optical line terminator (OLT)**'a bağlanır. OLT, optik ve elektrik sinyalleri arasında dönüştürme yaparak bir telekom router aracılığıyla İnternet’e bağlanır. 
+Evde, kullanıcılar bir home router'ı (tipik olarak wireless router) ONT'ye bağlar ve bu home router üzerinden Internet'e erişir. 
+PON mimarisinde, OLT'den splitter'a gönderilen tüm packet'ler splitter'da **çoğaltılır** (bir cable head end'e benzer şekilde).
+
+## FTTH Internet Access
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│    [Home 1]        [Home 2]        [Home 3]                                 │
+│       🏠             🏠             🏠                                      │
+│       │              │              │                                       │
+│    [ONT]          [ONT]          [ONT]                                      │
+│       │              │              │                                       │
+│       └──────────────┼──────────────┘                                       │
+│                      │                                                      │
+│              [Optical splitter]                                             │
+│                      │                                                      │
+│                      │                                                      │
+│                   [Optical fibers]                                          │
+│                      │                                                      │
+│                      ▼                                                      │
+│                   [OLT]                                                     │
+│              (Optical Line                                                  │
+│               Terminator)                                                   │
+│                      │                                                      │
+│                      │                                                      │
+│                      ▼                                                      │
+│    [Central office]──┴──► [Internet]                                        │
+│       🏢                    (◯)                                             │
+│                                                                             │
+│    ONT = Optical Network Terminator (ev tarafı)                             │
+│    OLT = Optical Line Terminator (CO tarafı)                                │
+│    Splitter = Passive optical splitting (güç gerektirmez!)                  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+## Fixed Wireless Internet (FWI)
+
+**Fixed wireless Internet (FWI)** da popüler bir Internet access teknolojisi haline geldi. FWI sadece high-speed şekilde ikametine access sağlamakla kalmaz, aynı zamanda telco'nun CO'sundan eve kadar pahalı ve arıza eğilimli cabling kurulumunu da gerektirmez. **5G fixed wireless** ile, beam-forming teknolojisi kullanılarak, data provider'ın baz istasyonundan evdeki bir modem'e wireless olarak gönderilir. Bir WiFi wireless router modem'e bağlanır (muhtemelen birlikte paketlenmiş), tıpkı bir WiFi wireless router'ın cable veya DSL modem'e bağlanması gibi.
+
+## LEO Satellites - Düşük Yörünge Uyduları
+
+DSL, cable, FTTH ve FWI'ye ek olarak, **low-earth orbit (LEO) satellites** giderek artan şekilde geniş bant Internet access için kullanılıyor, özellikle kırsal ve uzak alanlarda. SpaceX'in **Starlink** gibi şirketler, büyük uydu takımyıldızları konuşlandırıyor; “jeostasyonel uydular”a (Jeostasyoner uydular, ekvator üzerinde yaklaşık 35.786 kilometre yükseklikte, Dünya ile aynı hızda dönen ve yer sabit kalan özel araçlardır. Bu uydular haberleşme, televizyon yayını ve meteoroloji alanlarında kullanılır) göre çok daha düşük sinyal yayılma gecikmeleri ile high-speed access sağlıyorlar.
+
+> LEO vs jeostasyonel farkı önemli. Jeostasyonel uydu ~35.786 km yükseklikte, gidiş-dönüş propagation delay ~250-300ms. LEO uydu (Starlink gibi) ~550 km yükseklikte, delay ~20-40ms. Online oyun ve video conference için bu fark gece-gündüz. Ayrıca FTTH'de PON mimarisinin "passive" olması önemli: splitter güç gerektirmez, sadece ışığı böler. Bu, CO'dan eve kadar aktif cihaz olmadığı için daha az arıza demek. AON ise switched Ethernet, yani aktif cihazlar var. Production'da "fiber mi çekelim?" diye sorulursa, PON daha ucuz ve yaygın, AON daha esnek ama daha pahalı. 
