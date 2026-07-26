@@ -499,3 +499,94 @@ PON mimarisinde, OLT'den splitter'a gönderilen tüm packet'ler splitter'da **ç
 DSL, cable, FTTH ve FWI'ye ek olarak, **low-earth orbit (LEO) satellites** giderek artan şekilde geniş bant Internet access için kullanılıyor, özellikle kırsal ve uzak alanlarda. SpaceX'in **Starlink** gibi şirketler, büyük uydu takımyıldızları konuşlandırıyor; “jeostasyonel uydular”a (Jeostasyoner uydular, ekvator üzerinde yaklaşık 35.786 kilometre yükseklikte, Dünya ile aynı hızda dönen ve yer sabit kalan özel araçlardır. Bu uydular haberleşme, televizyon yayını ve meteoroloji alanlarında kullanılır) göre çok daha düşük sinyal yayılma gecikmeleri ile high-speed access sağlıyorlar.
 
 > LEO vs jeostasyonel farkı önemli. Jeostasyonel uydu ~35.786 km yükseklikte, gidiş-dönüş propagation delay ~250-300ms. LEO uydu (Starlink gibi) ~550 km yükseklikte, delay ~20-40ms. Online oyun ve video conference için bu fark gece-gündüz. Ayrıca FTTH'de PON mimarisinin "passive" olması önemli: splitter güç gerektirmez, sadece ışığı böler. Bu, CO'dan eve kadar aktif cihaz olmadığı için daha az arıza demek. AON ise switched Ethernet, yani aktif cihazlar var. Production'da "fiber mi çekelim?" diye sorulursa, PON daha ucuz ve yaygın, AON daha esnek ama daha pahalı. 
+
+## Ethernet and WiFi
+
+Corporate ve university campus'lerde, ve giderek artan şekilde home settings'te, bir **local area network (LAN)** bir end system'i edge router'a bağlamak için kullanılır. 
+Birçok LAN teknolojisi olmasına rağmen, **Ethernet** corporate, university ve home networks'te by far en yaygın access technology'dir. 
+Ethernet kullanıcıları bir Ethernet switch'e bağlanmak için **twisted-pair copper wire** kullanır. Ethernet switch veya birbiriyle bağlı böyle switch'lerden oluşan bir network, daha sonra daha büyük Internet'e bağlanır. 
+Ethernet access ile, kullanıcılar tipik olarak Ethernet switch'e **100 Mbps ila onlarca Gbps** access'e sahiptir; oysa server'lar **1 Gbps ila 10 Gbps** access'e sahip olabilir.
+
+Ancak giderek artan şekilde, insanlar laptop'lardan, akıllı telefon'lardan, tablet'lerden ve diğer "nesnelerden" wireless olarak Internet'e erişiyor. 
+Bir **wireless LAN** ortamında, wireless kullanıcılar packet'leri bir **access point**'e iletir/alır ki bu access point enterprise'un network'üne bağlıdır (büyük olasılıkla wired Ethernet kullanarak), bu da sırayla wired Internet'e bağlanır. 
+Bir wireless LAN kullanıcısı tipik olarak access point'in birkaç on metre içinde olmalıdır. **IEEE 802.11** teknolojisine dayalı wireless LAN access, daha samimi adıyla **WiFi**, şimdi neredeyse her yerde — üniversiteler, business office'lar, kafeler, havalimanları, evler ve hatta uçaklarda. 802.11 bugün **100 Mbps'ten daha fazla** shared transmission rate sağlar.
+
+Ethernet ve WiFi access network'leri ilk olarak enterprise (corporate, university) settings'te deploy edilmiş olsa da, bunlar aynı zamanda home network'lerin de yaygın component'leridir. 
+Birçok home, broadband ikamet yeri access'i (yani cable modem veya DSL) bu ucuz wireless LAN teknolojileriyle birleştirerek güçlü home network'ler oluşturur.  
+Bu home network, mutfaktan arka bahçe'ye ordan yatak odalarına dolaşan bir **taşınabilir laptop**, birden fazla Internet'e bağlı **ev aletleri**, aynı zamanda bir **wired PC**'den oluşur; bir **base station** (wireless access point) ki bu evdeki wireless PC ve diğer wireless cihazlarla iletişim kurar; ve wireless access point'i, diğer wired home cihazlarını Internet'e bağlayan bir **home router**'dan oluşur.
+
+## Ethernet Internet Access
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│    [PC]              [PC]              [PC]              [Server]           │
+│     💻                💻                💻                🖥️                │
+│      │                │                │                  │                 │
+│      │ 1 Gbps         │ 1 Gbps         │ 1 Gbps           │                 │
+│      │                │                │                  │                 │
+│      └────────────────┴────────────────┴──────────────────┘                 │
+│                              │                                              │
+│                        [Ethernet switch]                                    │
+│                              │                                              │
+│                              │                                              │
+│                              ▼                                              │
+│                        [Kurumsal router]                                    │
+│                              │                                              │
+│                              │                                              │
+│                              ▼                                              │
+│                "Kurumun İnternet Servis Sağlayıcısına"                      │
+│                                                                             │
+│    Users: 100 Mbps - tens of Gbps                                           │
+│    Servers: 1 Gbps - 10 Gbps                                                │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+## A Typical Home Network
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         ┌─────────┐                                         │
+│                         │   🏠    │                                         │
+│                         │  EV     │                                         │
+│                         │         │                                         │
+│    ┌──────────┐    ┌────┴───┐     │     ┌──────────┐                        │
+│    │ Laptop   │◄──►│ Wireless│    │     │ Thermostat│                       │
+│    │          │        AP    │    │     │    🌡️    │                        │
+│    │   💻     │    │  ⬆️     │    │     │          │                        │
+│    └──────────┘    └────┬───┘     │     └──────────┘                        │
+│                         │         │                                         │
+│    ┌──────────┐    ┌────┴───┐     │     ┌──────────┐                        │
+│    │  Fridge  │◄──►│        │     │     │   PC     │                        │
+│    │    🧊    │    │ Home   │◄────┼────►│ (wired)  │                        │
+│    └──────────┘    │Router  │     │     │   💻     │                        │
+│                    └───┬────┘     │     └──────────┘                        │
+│                        │          │                                         │
+│                        │          │                                         │
+│                        └──────────┘                                         │
+│                             │                                               │
+│                             │                                               │
+│                             ▼                                               │
+│                      [Cable head end]                                       │
+│                             │                                               │
+│                             ▼                                               │
+│                        [Internet]                                           │
+│                           (◯)                                               │
+│                                                                             │
+│    Bu network, hane üyelerinin Internet'e broadband access sağlar;          │
+│    bir üye mutfaktan arka bahçeye yatak odalarına dolaşabilir.              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+## Wide-Area Wireless Access: 4G and 5G
+
+iPhone'lar ve Android cihazlar gibi mobile devices, mesajlaşmak, online sosyal network'lerde fotoğraf ve video paylaşmak, mobile ödeme yapmak, film izlemek, müzik dinlemek, video conference yapmak ve hareket halindeyken çok daha fazlasını yapmak için kullanılıyor. Bu cihazlar, cep telefonu için kullanılan aynı wireless altyapı'yı kullanarak packet'leri mobil şebeke operatörü tarafından işletilen bir **baz istasyonu** aracılığıyla gönderir/alır. 
+WiFi'dan farklı olarak, bir kullanıcının base station'ın sadece birkaç on metre değil, **birkaç kilometre** içinde olması yeterlidir.
+
+Telecommunications şirketleri, **fourth-generation (4G)** wireless olarak adlandırılan şeylere muazzam yatırımlar yaptı; bu, gerçek dünya download hızlarında **60 Mbps'ye kadar** sağlar. 
+Ancak daha yüksek hızlı wide-area access teknolojileri — **fifth-generation (5G)** wide-area wireless network'leri — şimdiden deploy ediliyor. 
+
+> Burada kritik bir ayrım var: **LAN (Local Area Network)** vs **WAN (Wide Area Network)**. Ethernet ve WiFi LAN teknolojileridir — kısa mesafe, yüksek hız, düşük gecikme. 4G/5G ise WAN teknolojileridir — uzun mesafe (kilometrelerce), mobil altyapı, daha yüksek gecikme. Bir sınavda "Neden ofiste WiFi kullanıyoruz, 5G değil?" diye sorarlarsa, cevap: WiFi daha hızlı, daha düşük gecikme, daha az tıkanıklık, ama kısa menzil. 5G ise uzun menzil, ama base station'a bağımlısın ve shared spectrum. Ayrıca home network mimarisini unutma: Home Router = NAT + DHCP + Switch + Access Point (çoğu modern cihaz hepsi bir arada). Production'da bir evde network sorunu varsa, "modem mi router mi?" ayrımını yapmak gerekir — cable head end'e giden cihaz modem, ev içi dağıtımı yapan router. Birçok insan bunları karıştırır.
+
