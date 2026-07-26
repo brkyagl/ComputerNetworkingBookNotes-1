@@ -590,3 +590,81 @@ Ancak daha yüksek hızlı wide-area access teknolojileri — **fifth-generation
 
 > Burada kritik bir ayrım var: **LAN (Local Area Network)** vs **WAN (Wide Area Network)**. Ethernet ve WiFi LAN teknolojileridir — kısa mesafe, yüksek hız, düşük gecikme. 4G/5G ise WAN teknolojileridir — uzun mesafe (kilometrelerce), mobil altyapı, daha yüksek gecikme. Bir sınavda "Neden ofiste WiFi kullanıyoruz, 5G değil?" diye sorarlarsa, cevap: WiFi daha hızlı, daha düşük gecikme, daha az tıkanıklık, ama kısa menzil. 5G ise uzun menzil, ama base station'a bağımlısın ve shared spectrum. Ayrıca home network mimarisini unutma: Home Router = NAT + DHCP + Switch + Access Point (çoğu modern cihaz hepsi bir arada). Production'da bir evde network sorunu varsa, "modem mi router mi?" ayrımını yapmak gerekir — cable head end'e giden cihaz modem, ev içi dağıtımı yapan router. Birçok insan bunları karıştırır.
 
+# 1.2.2 Physical Media
+
+Önceki konularda, Internet'teki en önemli network access teknolojilerinden bazılarının önbakışını verdik. 
+Bu teknolojileri açıklarken, kullanılan physical media'yı da belirttik. Örneğin, HFC'nin fiber cable ve coaxial cable kombinasyonunu kullandığını söyledik. 
+DSL ve Ethernet'in copper wire kullandığını söyledik. Ve mobile access network'lerin radio spectrum kullandığını söyledik. Bu konuda ise, Internet'te yaygın olarak kullanılan bu ve diğer transmission media'nın kısa bir önbakışını sunuyoruz.
+
+Bir physical medium'ın ne anlama geldiğini tanımlamak için, bir bit'in kısa hayatını düşünelim. Bir bit'in bir end system'den, bir dizi link ve router'dan geçerek başka bir end system'e seyahat ettiğini hayal edin. 
+Bu zavallı bit birçok kez tekme atılır ve birçok kez iletilir. Kaynak end system ilk olarak bit'i iletir; kısa süre sonra serideki ilk router bit'i alır; ilk router daha sonra bit'i iletir; ve kısa süre sonra serideki ikinci router bit'i alır; ve böyle devam eder. Böylece bit'imiz, kaynaktan hedefe seyahat ederken bir dizi **transmitter-receiver pair**'inden geçer. 
+Her transmitter-receiver pair'i için, bit, bir **physical medium** üzerinde elektromanyetik dalgalar veya optik darbeler yoluyla iletilir. 
+Physical medium birçok şekil ve form alabilir ve yol boyunca her transmitter-receiver pair'i için aynı tip olmak zorunda değildir.
+
+Physical media örnekleri arasında **twisted-pair copper wire**, **coaxial cable**, **multimode fiber-optic cable**, **karasal radio spectrum** ve **uydu radio spectrum** bulunur. 
+Physical media iki kategoriye ayrılır: **guided media(kılavuzlu medya)** ve **unguided media(kılavuzsuz medya)**. Guided media'da, dalgalar katı bir medium boyunca yönlendirilir; örneğin bir fiber-optic cable, bir twisted-pair copper wire veya bir coaxial cable. Unguided media'da, dalgalar atmosferde ve dış uzayda yayılır; örneğin bir wireless LAN'da veya bir dijital uydu kanalında.
+
+Ancak çeşitli media tiplerinin karakteristiklerine girmeden önce, maliyetleri hakkında birkaç söz söyleyelim. Physical link'in (copper wire, fiber-optic cable vb.) “gerçek maliyet”i, diğer networking maliyetlerine kıyasla genellikle nispeten düşüktür. Özellikle, physical link'in kurulumuyla ilişkili işgücü maliyeti, malzemenin maliyetinden katlarca daha yüksek olabilir. 
+Bu nedenle, birçok builder binadaki her odaya twisted pair, optical fiber ve coaxial cable kurar. Başlangıçta sadece bir ortam kullanılsa bile, yakın gelecekte başka bir ortam kullanılabileceği ihtimali yüksektir, ve bu yüzden gelecekte ekstra kablo çekmek zorunda kalmamak için para tasarrufu yapılır.
+
+## Twisted-Pair Copper Wire
+
+En ucuz ve en yaygın kullanılan guided transmission medium **twisted-pair copper wire**'dır. Yüz yılı aşkın bir süredir telephone network'lerinde kullanılmıştır. 
+Aslında, telefon ahizesinden yerel telefon santraline kadar uzanan kablolu bağlantıların %99’undan fazlasında twisted-pair copper kullanılır. 
+Çoğumuz evlerimizde (veya ebeveynlerimizin veya neneler-dedeler) ve çalışma ortamlarında twisted pair görmüşüzdür. 
+Twisted pair, her biri yaklaşık **1 mm kalınlığında** olan iki yalıtımlı copper wire'dan oluşur; bunlar düzenli bir spiral desen şeklinde dizilir. 
+Wire'lar(teller) birbirine bükülür (twisted) çünkü bu, yakındaki benzer pair'lerden gelen elektriksel parazit'i azaltır. 
+Tipik olarak, birkaç pair bir koruyucu kalkan içine sarılarak bir cable'de birleştirilir. Bir wire pair, tek bir communication link oluşturur.
+
+**Unshielded twisted pair (UTP)**, bir building içindeki computer network'ler için yaygın olarak kullanılır; yani **LAN'lar** için. 
+Bugün twisted pair kullanan LAN'lar için data rate'leri **10 Mbps ila 10 Gbps** aralığındadır. Elde edilebilen data rate'ler, wire'ın kalınlığına ve transmitter ile receiver arasındaki mesafeye bağlıdır.
+
+Fiber-optic teknolojisi 1980'lerde ortaya çıktığında, birçok insan twisted pair'i nispeten düşük bit rate'leri nedeniyle küçümsedi. Bazı insanlar hatta fiber-optic teknolojisinin twisted pair'i tamamen egale edeceğini düşündü.
+Ama twisted pair kolay kolay pes etmedi. Modern twisted-pair teknolojisi, örneğin **category 6a cable**, yüz metre mesafelere kadar **10 Gbps** data rate'leri elde edebilir. 
+Sonuçta, twisted pair **high-speed LAN networking** için dominant çözüm olarak ortaya çıktı.
+
+Daha önce tartıştığımız gibi, twisted pair aynı zamanda ikamet yerine Internet access için de yaygın olarak kullanılır. 
+Dial-up modem teknolojisinin twisted pair üzerinde **56 kbps**'ye kadar hızlarda access sağladığı görülmüş. 
+Ayrıca **DSL (digital subscriber line)** teknolojisinin, ikamet yerindeki kullanıcıların twisted pair üzerinden Internet'e **onlarca Mbps** hızında erişmesini sağladığını da görülüyor (kullanıcılar ISP'nin central office'ine yakın yaşadığında).
+
+>  **"İşçilik maliyeti > Malzeme maliyeti"**. Builder'lar her odaya her türlü kabloyu çeker çünkü gelecekte değiştirmek çok pahalı. Production'da bir datacenter veya ofis tasarlarken, "şu an ne kullanıyoruz" demek yerine "5-10 yıl sonra ne kullanacağız" diye düşünmek gerekir. Ayrıca twisted pair'in hâlâ dominant olması şaşırtıcı gelebilir ama Cat6a ile 10 Gbps alıyorsun, bu LAN için çoğu senaryoda yeterli. Ama unutmayın: mesafe önemli! 100 metre üzeri zayıflama artar, o yüzden switch'ler arası mesafe kritik. UTP = Unshielded Twisted Pair, STP = Shielded Twisted Pair. UTP daha ucuz ama EMI(elektriksel parazit)'ya daha açık. STP daha pahalı ama daha az parazitli. Sınavda "UTP neden yaygın?" diye sorarlarsa, "ucuz, esnek, yeterince hızlı, kolay kurulum" denilir.
+
+## Coaxial Cable
+
+Twisted pair gibi, coaxial cable de iki copper iletkenden oluşur, ancak bu iki iletken **concentric** (merkezdeki çekirdek ve etrafındaki örgü) şekildedir, parallel değil. 
+Bu yapı ve özel yalıtım ve koruma ile, coaxial cable **yüksek data transmission rate'leri** elde edebilir. 
+Coaxial cable kablolu televizyon sistemlerinde oldukça yaygındır. Daha önce gördüğümüz gibi, cable televizyon sistemleri yakın zamanda cable modem'lerle birleştirilerek ikamet yeri kullanıcılara **yüzlerce Mbps** hızında Internet access sağlamıştır. Cable televizyon ve cable Internet access'te, transmitter digital signal'i spesifik bir frequency band'a kaydırır ve ortaya çıkan analog signal, transmitter'dan bir veya daha fazla receiver'a gönderilir. 
+Coaxial cable bir **guided shared medium** olarak kullanılabilir. Spesifik olarak, birkaç end system doğrudan cable'a bağlanabilir; her bir end system, diğer end system'ler tarafından gönderilen her şeyi alır.
+
+> Coaxial cable'in "shared medium" olması kritiktir, Tüm mahalle aynı coaxial cable'i paylaşır. Bu yüzden cable Internet'te "privacy" konusu vardı — eskiden komşunun paketlerini sniff etmek mümkündü. Bugün DOCSIS 3.1 ile encryption var ama yine de shared medium mantığı değişmez. Ayrıca concentric yapı: içteki çekirdek (merkez iletken), etrafında dielektrik yalıtım, ardından örgülü koruma, en dışta da plastic jacket. Bu yapı EMI'ya karşı twisted pair'den çok daha dayanıklı. 75 ohm empedans'lıdır(Kelime anlamı olarak buradaki empedans, yüksek frekanslı sinyallerin (video veya internet verisi) kablo içinde ilerlerken karşılaştığı "elektriksel dalga direnci" veya daha teknik adıyla karakteristik empedanstır.) (twisted pair 100 ohm). Sınavlarda "coaxial neden shielding'i daha iyi?" diye sorarlarsa, "tam kapsayan örgü shield sayesinde dış elektromanyetik alanlar iç iletkeni etkilemez" demek doğrudur.
+
+## Fiber Optics
+
+Bir **optical fiber**, ince, esnek bir medium'dur ki **ışık darbeleri** iletir; her darbe bir bit'i temsil eder. Tek bir optical fiber, **onlarca hatta yüzlerce gigabit per second**'a kadar muazzam bit rate'leri destekleyebilir. 
+Electromagnetic parazit'e karşı **immune**'dirler (bağışık), **100 kilometreye kadar** çok düşük 'sinyal zayıflaması'na sahiptirler ve **sniff** edilmeleri (dinlenmeleri) çok zordur. Bu karakteristikler fiber optics'i **tercih edilen uzun mesafe guided transmission medium** yapmıştır; özellikle yurtdışı link'ler için. Birçok uzun-mesafeli telephone network, ABD'de ve dünyanın başka yerlerinde artık sadece fiber optics kullanır. Fiber optics aynı zamanda Internet'in **backbone**'unda da yaygındır. Ancak, optical devices'ların — transmitter'lar, receiver'lar ve switch'ler gibi — **yüksek maliyet'i**, bunların kısa-süreli transport için deployment'ını engellemiştir; örneğin bir LAN'da veya ikamet yeri access network'ünde eve girerken.
+
+**Optical Carrier (OC)** standard link hızları **51.8 Mbps ila 39.8 Gbps** aralığındadır; bu spesifikasyonlar sıklıkla **OC-n** olarak adlandırılır, burada link speed **n × 51.48 Mbps**'ye eşittir. Bugün kullanımda olan standartlar arasında **OC-1, OC-3, OC-12, OC-24, OC-48, OC-96, OC-192, OC-768** bulunur.
+
+> Fiber'in üç süper gücü: **1) EMI'ya bağışık** — elektromanyetik parazit yok, yanında elektrik hattı geçse bile etkilenmez. **2) Düşük zayıflama** — 100 km'de bile sinyal zayıflamadan gider, bu yüzden deniz altı kablolar fiber. **3) Hard to tap** — fiberi dinlemek için fiziksel olarak keseceksin, bu da detect edilebilir. Ama dezavantajı: **optical devices pahalı** SFP, SFP+, QSFP modüller, DWDM sistemler... Bunlar binlerce dolar. Bu yüzden LAN'da twisted pair hâlâ dominant. OC-n hesaplaması: OC-1 = 51.84 Mbps (STM-0), OC-3 = 155.52 Mbps (STM-1), OC-48 = 2.488 Gbps (STM-16), OC-192 = 9.953 Gbps (STM-64). SDH/SONET terminolojisidir bu. Production'da "10G fiber" dediğin zaman aslında OC-192/STM-64 konuşuyorsun. Ayrıca "backbone" dediğimiz yer, ISP'lerin omurgası — orada fiber hâkim, copper yok.
+
+## Karasal Radio Channels
+
+Radio channels, electromagnetic spectrum'da signal taşır. Fiziksel wire kurulumu gerektirmedikleri için, duvarlardan geçebildikleri için, mobile kullanıcılara connectivity sağlayabildikleri için ve potansiyel olarak signal'i uzun mesafeler taşıyabildikleri için çekici bir medium'dur. Bir radio channel'ın karakteristikleri, “yayılma ortamı”na ve signal'in taşınacağı mesafeye önemli ölçüde bağlıdır. Çevresel hususlar arasında **path loss** ve **shadow fading** (signal bir mesafe boyunca ve engelleyici objelerin etrafından seyahat ederken sinyal gücü'nü azaltan), **multipath fading** (sinyalin nesnelerden yansıması nedeniyle) ve **parazit** (diğer transmission'lar ve electromagnetic signals nedeniyle) bulunur.
+
+Yer üstü radio channels genel olarak üç grupta sınıflandırılabilir:
+
+- Çok kısa mesafede çalışanlar (örneğin bir veya iki metre; wireless headset'ler, keyboard'lar ve medical devices gibi personal devices)
+- Local area'da çalışanlar, tipik olarak on metrelerden birkaç yüz metreye kadar
+- Wide area'da çalışanlar, onlarca kilometreye kadar 
+
+> Radio channel'ların üç düşmanı var, bunları unutma: **1) Path loss** — mesafe arttıkça sinyal zayıflar. **2) Shadow fading** — bina, ağaç, duvar araya girerse sinyal kesilir veya yansır. **3) Multipath fading** — sinyal direkt gelir, duvardan yansıyarak gelir, yerden yansıyarak gelir... Bu çok sayıda yol birbiriyle çakışmaktadır, sinyal gücü dalgalanır. Bu yüzden wireless'ta "sinyal kesintisi" olur. Production'da WiFi kapsam sorunu yaşıyorsan, bir WiFi analyzer ile RSSI (Received Signal Strength Indicator) ölçersin. -30 dBm mükemmel, -67 dBm kullanılabilir, -80 dBm ve altı çöp. Ayrıca 2.4 GHz vs 5 GHz ayrımı: 2.4 daha uzun mesafe, duvarları daha iyi geçer ama daha fazla parazit. 5 GHz daha hızlı ama daha kısa menzil.
+
+## Uydu Radio Channels
+
+Bir iletişim uydusu, **yer istasyonları** olarak bilinen iki veya daha fazla yerdeki mikrodalga vericisini/alıcısını birbirine bağlar. Uydu, bir frequency band'ında transmission'ları alır, signal'i bir **repeater** kullanarak regenerates eder ve signal'i başka bir frequency'de iletir. İletişimde kullanılan iki tip uydu vardır: **jeostasyonel uydular** ve **düşük yörüngeli (LEO) uydular**.
+
+**Jeostasyonel uydular**, Dünya üzerinde aynı noktanın üzerinde kalıcı olarak kalır. Bu sabit konum, uydunun Dünya yüzeyinin **36.000 kilometre** yukarısındaki bir yörüngeye yerleştirilmesiyle sağlanır. Yer istasyonundan uyduya ve tekrar yer istasyonuna uzanan bu muazzam mesafe, **280 milisaniyelik** önemli bir sinyal yayılma gecikmesine yol açar. Yine de, yüzlerce Mbps hızında çalışabilen uydu links, DSL veya cable-based Internet access'in olmadığı alanlarda sıklıkla kullanılır. Jeostasyonel uydular aynı zamanda **global positioning system (GPS)**'in de merkezi component'idir; birçok location-based Internet application buna dayanır.
+
+**LEO uydular**, Dünya'ya çok daha yakın yerleştirilir ve Dünya üzerindeki bir noktanın üzerinde kalıcı olarak kalmazlar. Dünya'nın etrafında dönerler (tıpkı Ay gibi) ve birbirleriyle ve yer istasyonlarıyla iletişim kurabilirler. Jeostasyonel uydulara kıyasla, çok daha düşük bir gidiş-dönüş yayılma gecikmeleri vardır; yaklaşık **10 milisaniye**. Bir alana sürekli veri akışı sağlamak için, bir dizi uydunun yörüngeye yerleştirilmesi gerekiyor. Şu anda birçok alçak irtifa iletişim sistemi geliştirilme aşamasındadır. LEO satellite teknolojisi, özellikle kara tabanlı iletişim altyapısı tarafından kolayca hizmet verilemeyen uzak alanlarda Internet access için giderek artan şekilde kullanılmaktadır.
+
+> İşte Jeostasyonel vs LEO'nun kritik farkları: **Jeostasyonel: 36.000 km, ~280ms delay.** Bu online oyun ve video conference için ölümcül. Ama TV broadcast için uygun çünkü tek uydu tüm bir kıtayı görür. **LEO: ~550 km, ~10ms delay.** Starlink gibi. Ama iletişim için yüzlerce uydu gerekir (Starlink'in 6.500 ile 7.000 uydusu var). Jeostasyonel "repeater" mantığı: uplink frequency'den alır, downlink frequency'ye çevirir. Bu FDMA (Frequency Division Multiple Access) sayesinde birden fazla yer istasyonu aynı uyduyu kullanabilir. BU ARADA KİTAPTA GPS aslında Jeostasyonel gösteriliyor lakin şöyle bi şey okudum MEO (Medium Earth Orbit, ~20.000 km) ama kitap burada Jeostasyonel ile ilişkilendirmiş. Production'da "uydu Internet" dediğin zaman, kırsal alanlarda DSL/Cable yoksa tek çare. Ama geçikme yüksek, bu yüzden real-time app'lerde kullanım zor. LEO bu sorunu çözüyor ama maliyet yüksek, uydu sayısı çok fazla.
