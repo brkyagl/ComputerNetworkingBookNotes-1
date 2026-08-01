@@ -892,3 +892,83 @@ Her link dört circuit'e sahip olduğu için, end-to-end connection tarafından 
 Buna karşılık, bir host'un packet-switched bir network üzerinden (Internet gibi) başka bir host'a packet göndermek istediğinde neler olduğunu düşünelim. Circuit switching'te olduğu gibi, packet bir dizi communication link üzerinden iletilir. Ama circuit switching'ten farklı olarak, packet **hiçbir link kaynağını reserve etmeden** network'e gönderilir. Eğer link'lerden biri, aynı anda başka packet'lerin de iletilmesi gerektiği için tıkanık ise, o zaman packet transmission link'in gönderici tarafındaki bir buffer'da beklemek zorunda kalacak ve bir delay yaşayacaktır. Internet packet'ları zamanında teslim etmek için elinden geleni yapar, ancak herhangi bir **garanti vermez**.
 
 > İşte packet switching vs circuit switching'in kritik noktaları burası. **Circuit switching = garanti, ama israf.** Rezervasyon yaptın, masanın boş da kalsa o masa senin. Telefon konuşması sırasında sessiz kalırsan, o bandwidth çöpe gidiyor. **Packet switching = paylaşım, ama garanti yok.** Masaya oturan varsa beklersin, ama boş masaları kimseye ayırmıyoruz, herkes kullanabiliyor. Bu yüzden Internet packet switching kullanır — daha verimli. Ama VoIP veya video conference gibi real-time uygulamalarda QoS (Quality of Service) gerekebilir, işte o zaman circuit switching mantığına yaklaşan mekanizmalar (IntServ, DiffServ) devreye girer. 250 kbps hesabı: 1 Mbps / 4 circuit = 250 kbps. Bu **FDM (Frequency Division Multiplexing)** veya **TDM (Time Division Multiplexing)** ile yapılır. TDM'de her circuit farklı time slot'u kullanır, FDM'de farklı frequency band'ı. Geleneksel telefon hizmetleri TDM kullanır (64 kbps per circuit, E1/T1 hatlar). Sınavlarda "neden Internet packet switching kullanıyor?" diye sorarlarsa, "kaynak kullanımı daha verimli, ani trafik artışına uygun,  hataya dayanıklı" diyebiliriz. "Circuit switching nerede kullanılır?" → "Telephony, dedicated leased lines, real-time garanti gereken yerler."
+
+## Multiplexing in Circuit-Switched Networks
+
+Bir link'teki circuit, ya **frequency-division multiplexing (FDM)** ya da **time-division multiplexing (TDM)** ile implemente edilir. 
+FDM'de, bir link'in frequency spectrum'u, link üzerinde kurulan connection'lar arasında bölünür. Spesifik olarak, link connection süresi boyunca her connection'a bir frequency band ayırır. 
+Telephone network'lerinde, bu frequency band tipik olarak **4 kHz** genişliğindedir (yani 4.000 hertz veya saniyede 4.000 cycle). Band'ın genişliği, şaşırtıcı olmayan bir şekilde, **bandwidth** olarak adlandırılır. FM radio istasyonları da FDM'i kullanarak **88 MHz ile 108 MHz** arasındaki frequency spectrum'u paylaşır; her istasyona spesifik bir frequency band ayrılır.
+
+TDM link'i için, zaman sabit süreli **frames**'lere bölünür ve her frame sabit sayıda **time slots**'a bölünür. Network bir link üzerinde connection kurduğunda, her frame'de bu connection'a bir time slot ayırır. Bu slot'lar, connection'ın data'sını iletmek için (her frame'de) kullanılabilecek bir time slot ile, o connection'ın tek kullanımına dedicated'dir.
+
+Aşağaki şema, en fazla dört circuit destekleyen spesifik bir network link'i için FDM ve TDM'i gösteriyor. FDM için, frequency domain dört band'a bölünmüştür; her biri **4 kHz** bandwidth'e sahip. TDM için, time domain frame'lere bölünmüştür; her frame'de dört time slot var, her circuit dönen TDM frame'lerinde aynı dedicated slot'a atanmıştır. TDM için, bir circuit'in transmission rate'i, frame rate'in slot'taki bit sayısı ile çarpımına eşittir. Örneğin, eğer link saniyede **8.000 frame** iletiyorsa ve her slot **8 bits**'ten oluşuyorsa, o zaman her circuit'in transmission rate'i **64 kbps**'tir.
+
+## FDM vs TDM
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│   FDM (Frequency Division Multiplexing):                                    │
+│                                                                             │
+│   Frequency ▲                                                               │
+│             │  ┌─────────────────┐  ← 4KHz bandwidth (Circuit 1 - Dark)     │
+│        4KHz ┤  │▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│                                            │
+│             │  └─────────────────┘                                          │
+│             │  ┌─────────────────┐  ← 4KHz bandwidth (Circuit 2 - Gri)      │
+│        4KHz ┤  │░░░░░░░░░░░░░░░░░│                                          │
+│             │  └─────────────────┘                                          │
+│             │         ...                                                   │
+│             └──────────────────────►                                        │
+│                              Link                                           │
+│                                                                             │
+│   TDM (Time Division Multiplexing):                                         │
+│                                                                             │
+│   Time ─────────────────────────────────────────────────────────────►       │
+│                                                                             │
+│   ┌─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┐             │
+│   │  1  │  2  │  3  │  4  │  1  │  2  │  3  │  4  │  1  │  2  │ ...         │
+│   │▓▓▓▓▓│░░░░░│█████│▒▒▒▒▒│▓▓▓▓▓│░░░░░│█████│▒▒▒▒▒│▓▓▓▓▓│░░░░░│             │
+│   └─────┴─────┴─────┴─────┴─────┴─────┴─────┴─────┴─────┴─────┘             │
+│   └──────────────┘  └──────────────┘  └──────────────┘                      │
+│       Frame 1           Frame 2           Frame 3                           │
+│                                                                             │
+│   Slot = Her frame'deki tek bir zaman dilimi                                │
+│   Frame = Slot'ların bir döngüsü (1-2-3-4)                                  │
+│                                                                             │
+│                                                                             │
+│   ┌─────┐                                                                   │
+│   │  2  │  “2” olarak işaretlenmiş tüm slotlar belirli bir amaca ayrılmıştır|               
+│   │░░░░░│  gönderici-alıcı çifti (Devre 2)                                  │
+│   └─────┘                                                                   │
+│                                                                             │
+│   FDM: Her circuit sürekli olarak bandwidth'in bir fraction'ını alır.       │
+│   TDM: Her circuit bandwidth'in tamamını periyodik olarak                   │
+│        kısa zaman aralıklarında (yani slot'larda) alır.                     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+Packet switching'in savunucuları, circuit switching'in israfçı olduğunu çünkü dedicated circuit'ların sessiz dönemler boyunca boşta kaldığını belirtmeyi her zaman sever. Örneğin, bir telephone call sırasında bir kişi konuşurken diğeri dinlerken, boşta kalan network kaynakları (connection'ın route'undaki link'lerdeki frequency band'ler veya time slot'lar) başka devam eden connection'lar tarafından kullanılamaz. Bu kaynakların nasıl yetersiz kullanıldığını gösteren başka bir örnek olarak, circuit-switched network kullanarak uzaktan bir dizi x-ray'e erişen bir radyolog düşünelim. Radyolog bir connection kurar, bir image ister, image'i inceler ve sonra yeni bir image ister. Network kaynakları connection'a ayrılmıştır ancak radyologun inceleme dönemleri boyunca kullanılmazlar. Packet switching'in savunucuları ayrıca, end-to-end circuit'lerin kurulmasının ve end-to-end transmission capacity'sinin reserve edilmesinin karmaşık olduğunu ve end-to-end path boyunca switch'lerin operasyonunu koordine etmek için karmaşık signaling software gerektirdiğini belirtmeyi sever.
+
+Circuit switching tartışmamızı bitirmeden önce, konuya daha fazla ön görü kazandıracak bir numerik örnek üzerinden çalışalım. Host A'dan Host B'ye **640.000 bits**'lik bir file'ın circuit-switched network üzerinden gönderilmesinin ne kadar sürdüğünü düşünelim. Network'teki tüm link'lerin **24 slot**'lu TDM kullandığını ve **1.536 Mbps** bit rate'e sahip olduğunu varsayalım. Ayrıca Host A'nın file'ı iletmeye başlamadan önce end-to-end bir circuit kurulmasının **500 msec** sürdüğünü varsayalım. File'ı göndermek ne kadar sürer? Her circuit'in transmission rate'i **(1.536 Mbps)/24 = 64 kbps**'tir, bu yüzden file'ı iletmek **(640.000 bits)/(64 kbps) = 10 saniye** sürer. Bu 10 saniyeye circuit'in kuruluşu için time'ı eklersek, file'ı göndermek için toplam **10.5 saniye** verir. Transmission time'ın link sayısından bağımsız olduğuna dikkat edin: Eğer end-to-end circuit bir link'ten veya yüz link'ten geçseydi, transmission time yine 10 saniye olurdu. (Actual end-to-end delay ayrıca bir propagation delay içerir)
+
+> **TDM'de circuit rate = Link Rate / Number of Slots.** 1.536 Mbps / 24 = 64 kbps. Geleneksel telefon hizmetlerinde her ses kanalı için kullanılan standart hızdır (PCM coding ile 8KHz × 8bit = 64 kbps). E1 hattı (Avrupa) 32 slot × 64 kbps = 2.048 Mbps. T1 hattı (ABD) 24 slot × 64 kbps = 1.544 Mbps. Kitapta 1.536 Mbps denmiş bu arada, bu T1'e çok yakın. FDM vs TDM ayrımı: FDM'de her zaman bandwidth'in bir parçasın alırsın (düşük hız ama sürekli). TDM'de periyodik olarak tüm bandwidth'i alırsın (yüksek hız ama kısa süreli). Sınavlarda "FDM ve TDM arasındaki fark?" diye sorarlarsa, "FDM: frekans alanı Multiplexing; TDM: zaman alanı Multiplexing. Ayrıca circuit switching'in israfı: sessiz period'larda kaynak boşta kalıyor. Bu yüzden Internet packet switching kullanır — istatiksel multiplexing. Ama VoIP'te "rahatlatıcı ses" denen bir şey var, boşta kalan zamanı doldurmak için. 10.5 saniye hesabında: 10 saniye transmission + 0.5 saniye setup. Setup time circuit switching'in dezavantajıdır — connection kurmak zaman alır. Packet switching'te setup yok, hemen gönderirsin. Ama circuit switching'te bir kere kurulunca garantili hız var.
+
+## Packet Switching vs Circuit Switching
+
+Circuit switching ve packet switching'i tanımladıktan sonra, hadi ikisini karşılaştıralım. Packet switching'in eleştirmenleri sıklıkla, packet switching'in real-time servisler için (örneğin telephone calls ve video conference calls) uygun olmadığını savunurlar. Çünkü packet switching, değişken ve öngörülemez end-to-end delay'lere sahiptir (esas olarak değişken ve öngörülemez kuyruk gecikmelerinden kaynaklanır). Packet switching'in savunucuları ise şunları savunur: **(1)** circuit switching'ten daha iyi transmission capacity paylaşımı sunar, ve **(2)** circuit switching'ten daha basit, daha verimli ve implemente etmek için daha az maliyetlidir. Packet switching vs circuit switching hakkında ilginç bir tartışma için [Molinero-Fernandez 2002 - - şunu buldum: https://yuba.stanford.edu/~nickm/papers/TCPSwitch-IEEEmicro-2002.pdf]'ye bakabilirsiniz. Genel olarak konuşursak, restoran rezervasyonlarıyla uğraşmak istemeyen insanlar packet switching'i circuit switching'e tercih eder.
+
+### Neden Packet Switching Daha Verimli?
+
+Basit bir örneğe bakalım. Kullanıcıların bir **1 Mbps** link'i paylaştığını varsayalım. Ayrıca her kullanıcının aktivite dönemleri arasında alternatif olarak, bir kullanıcı **sabit 100 kbps** hızında data ürettiği ve inaktivite dönemlerinde hiç data üretmediği varsayalım. Daha da ileri giderek, bir kullanıcının zamanın sadece **%10'unda** aktif olduğunu (ve kalan %90'ında kahve içerek boşta durduğunu) varsayalım. Circuit switching ile, her kullanıcı için her zaman **100 kbps** reserve edilmelidir. Örneğin, circuit-switched TDM ile, eğer bir saniyelik frame 100 ms'lik 10 time slot'a bölünürse, o zaman her kullanıcıya frame başına bir time slot ayrılır.
+
+Böylece, circuit-switched link sadece **10** (= 1 Mbps / 100 kbps) eşzamanlı kullanıcıyı destekleyebilir. Packet switching ile, spesifik bir kullanıcının aktif olma olasılığı **0.1**'dir (yani %10). Eğer **35 kullanıcı** varsa, **11 veya daha fazla** kullanıcının aynı anda aktif olma olasılığı yaklaşık olarak **0.0004**'tür. **10 veya daha az** eşzamanlı aktif kullanıcı olduğunda (ki bu 0.9996 olasılıkla gerçekleşir), data'nın toplam varış rate'i **1 Mbps**'ye eşit veya daha azdır — ki bu link'in output rate'idir. Böylece, 10 veya daha az aktif kullanıcı olduğunda, kullanıcıların packet'leri link üzerinden esasen **delay olmadan** akar; tıpkı circuit switching'teki gibi. Eşzamanlı aktif kullanıcı sayısı 10'u aştığında, packet'lerin toplam varış rate'i link'in output capacity'sini aşar ve output queue büyümeye başlar. (Varış input rate tekrar 1 Mbps'nin altına düşene kadar büyümeye devam eder; o noktada queue uzunluğu azalmaya başlar.) Bu örnekte 10'dan fazla eşzamanlı aktif kullanıcı olma olasılığı çok küçük olduğu için, packet switching **esasen circuit switching ile aynı performansı** sağlar, ancak bunu **üç kattan fazla kullanıcı sayısı** ile yapar.
+
+Şimdi ikinci basit bir örneği düşünelim. **10 kullanıcı** olduğunu ve bir kullanıcının aniden **bin adet 1.000-bit packet** (yani toplam 1 milyon bit) ürettiğini varsayalım; diğer kullanıcılar sessizdir ve packet üretmezler. Frame başına 10 slot ve her slot 1.000 bit'ten oluşan TDM circuit switching altında, aktif kullanıcı data iletmek için frame başına sadece kendi **bir time slot**'unu kullanabilir; her frame'deki kalan dokuz time slot boşta kalır. Aktif kullanıcının 1 milyon bit'inin tamamının iletilmesi **10 saniye** sürecektir. Packet switching durumunda, aktif kullanıcı packet'lerini **tam link hızı olan 1 Mbps** ile sürekli olarak gönderebilir, çünkü aktif kullanıcının packet'leriyle multiplex edilmesi gereken başka kullanıcı packet'leri yoktur. Bu durumda, aktif kullanıcının tüm data'sı **1 saniye** içinde iletilir.
+
+Yukarıdaki örnekler, packet switching performansının circuit switching performansından üstün olabileceğinin iki yolunu gösteriyor. Aynı zamanda, bir link'in transmission rate'inin birden fazla data stream arasında paylaşılmasının iki formu arasındaki kritik farkı da vurguluyorlar: **Circuit switching**, talepten bağımsız olarak transmission link'in kullanımını önceden ayırır (**pre-allocates**); allocated ama kullanılmayan link zamanı boşa gider. **Packet switching** ise diğer yandan, link kullanımını **talep üzerine** (**on demand**) ayırır. Link transmission capacity'si, sadece link üzerinden iletilmesi gereken packet'lere sahip olan kullanıcılar arasında, packet-by-packet bazında paylaşılır.
+
+Packet switching ve circuit switching günümüz telecommunication network'lerinde her ikisi de yaygın olmasına rağmen, trend kesinlikle **packet switching** yönündedir. Hatta günümüzün birçok circuit-switched telephone network'ü bile yavaş yavaş packet switching'e doğru geçiş yapmaktadır. Özellikle, telephone network'leri bir telephone call'un pahalı **yurtdışı** kısmı için sıklıkla packet switching kullanır.
+
+> 35 kullanıcı, %10 aktiflik. Circuit switching = 10 kullanıcı sınırı. Packet switching = 35 kullanıcı, çünkü 11+ aynı anda aktif olma olasılığı 0.0004 (neredeyse imkansız). Bu, telekomun temel ekonomisidir. İkinci örnek daha da vurucu: Biri aniden 1 MB gönderiyor, diğerleri boşta. TDM'de 10 saniye bekliyorsun çünkü sadece kendi slot'unu kullanabiliyorsun. Packet switching'te 1 saniye — **10x fark!** Çünkü boşta kalan bandwidth'i hemen kullanıyorsun. Bu yüzden Internet, dosya indirme, Web browsing gibi "ani patlamalı" trafik için mükemmel. Ama VoIP ve video conference gibi real-time uygulamalarda, packet switching'in queuing delay ve jitter'ı problem olur. İşte bu yüzden QoS (Quality of Service), MPLS, DiffServ gibi teknolojiler var — packet switching'in esnekliğini circuit switching'in garantisiyle birleştirmeye çalışıyorlar. Ayrıca "“yurtdışı kısımda” packet switching" çok önemli: uluslararası telefon görüşmeleriniz aslında ses paketleri (VoIP) olarak denizaltı fiber optic kablolar üzerinden gidiyor. Geleneksel circuit switching sadece "last mile"da kaldı. Sınavlarda "istatiksel multiplexing nedir?" diye sorarlarsa, "birden fazla kullanıcının aynı kaynağı paylaşması, ancak her kullanıcının aynı anda aktif olma olasılığının düşük olması nedeniyle toplam kapasiteden daha fazla kullanıcıya hizmet verme" denilebilir. "Packet switching neden daha verimli?" → "Talep üzerine kaynak tahsisi, istatistiksel multiplexing kazancı, patlama trafiğine uygundur."
+
