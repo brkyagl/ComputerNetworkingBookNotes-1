@@ -668,3 +668,179 @@ Bir iletişim uydusu, **yer istasyonları** olarak bilinen iki veya daha fazla y
 **LEO uydular**, Dünya'ya çok daha yakın yerleştirilir ve Dünya üzerindeki bir noktanın üzerinde kalıcı olarak kalmazlar. Dünya'nın etrafında dönerler (tıpkı Ay gibi) ve birbirleriyle ve yer istasyonlarıyla iletişim kurabilirler. Jeostasyonel uydulara kıyasla, çok daha düşük bir gidiş-dönüş yayılma gecikmeleri vardır; yaklaşık **10 milisaniye**. Bir alana sürekli veri akışı sağlamak için, bir dizi uydunun yörüngeye yerleştirilmesi gerekiyor. Şu anda birçok alçak irtifa iletişim sistemi geliştirilme aşamasındadır. LEO satellite teknolojisi, özellikle kara tabanlı iletişim altyapısı tarafından kolayca hizmet verilemeyen uzak alanlarda Internet access için giderek artan şekilde kullanılmaktadır.
 
 > İşte Jeostasyonel vs LEO'nun kritik farkları: **Jeostasyonel: 36.000 km, ~280ms delay.** Bu online oyun ve video conference için ölümcül. Ama TV broadcast için uygun çünkü tek uydu tüm bir kıtayı görür. **LEO: ~550 km, ~10ms delay.** Starlink gibi. Ama iletişim için yüzlerce uydu gerekir (Starlink'in 6.500 ile 7.000 uydusu var). Jeostasyonel "repeater" mantığı: uplink frequency'den alır, downlink frequency'ye çevirir. Bu FDMA (Frequency Division Multiple Access) sayesinde birden fazla yer istasyonu aynı uyduyu kullanabilir. BU ARADA KİTAPTA GPS aslında Jeostasyonel gösteriliyor lakin şöyle bi şey okudum MEO (Medium Earth Orbit, ~20.000 km) ama kitap burada Jeostasyonel ile ilişkilendirmiş. Production'da "uydu Internet" dediğin zaman, kırsal alanlarda DSL/Cable yoksa tek çare. Ama geçikme yüksek, bu yüzden real-time app'lerde kullanım zor. LEO bu sorunu çözüyor ama maliyet yüksek, uydu sayısı çok fazla.
+
+---
+
+# 1.3 The Network Core
+
+Internet'in edge'ini inceledikten sonra, şimdi network core'a daha derinlemesine dalalım — yani Internet'in end systems'lerini birbirine bağlayan packet switches ve links'in oluşturduğu **mesh** (ağ). Aşağıda ki şema, network core'u kalın, gölgeli çizgilerle vurguluyor.
+
+## Şema — The Network Core
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│   ┌──────────────┐                                                          │
+│   │ Mobile       │     ┌════════════════════════════════════╗               │
+│   │ Network      │     ║      National or Global ISP        ║               │
+│   │  📱 🚗 🚦    │     ║    (◯)════(◯)════(◯)               ║              │
+│   │     ⬆️       │     ║      ║      ║      ║               ║              │
+│   │   (◯)────────┼─────╫──────╫──────╫──────╫───────────────╫──────┐       │
+│   └──────────────┘     ║      ║      ║      ║               ║      │       │
+│                        ║      ║      ║      ║               ║      │       │
+│   ┌──────────────┐     ║  ┌───╫───┐  ║      ║  ┌────────────╫───┐  │       │
+│   │ Home         │     ║  │ Local│  ║       ║  │ Datacenter ║   │  │       │
+│   │ Network      │     ║  │ or   │  ║       ║  │ Network    ║   │  │       │
+│   │ [💻📱🌡️🧊]   │     ║  │Regional│║      ║  │  [🖥️🖥️]    ║   │  │       │
+│   │    (◯)───────┼─────╝  │ ISP  │  ║      ║  │     │       ║  │  │       │
+│   └──────────────┘        │ (◯)  │  ║      ║  │  (◯)        ║  │  │       │
+│                           └───┬──┘  ║      ║  └────────────╨───┘  │       │
+│                               │     ║      ║                      │       │
+│   ┌──────────────────┐        │     ║      ║      ┌────────────────┴──┐   │
+│   │ Enterprise       │        │     ║      ║      │ Content Provider ║    │
+│   │ Network          │        │     ║      ║      │ Network          ║    │
+│   │ [💻💻💻📱📱🖥️]   │       │      ║      ║      │  (◯)            ║    │
+│   │    (◯)──(◯)──(◯)│         │     ║      ║      └─────────────────┘    │
+│   └──────────────────┘        │     ║      ║                             │
+│                               └─────╩══════╩─────────────────────────────┘
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+## 1.3.1 Packet Switching
+
+Bir network application'da, end systems birbirleriyle **messages** exchange eder. Messages, uygulama tasarımcısının istediği her şeyi içerebilir. 
+Messages bir control function gerçekleştirebilir (örneğin, el sıkışma örneğimizdeki **"Merhaba"** mesajları) veya data içerebilir; örneğin bir e-mail message, bir JPEG image veya bir MP3 ses dosyası. 
+Bir source end system'den bir destination end system'e mesaj göndermek için, source uzun mesajı'ı **packets** olarak bilinen daha küçük data parçacık'larına böler.
+
+Source ve destination arasında, her packet **communication links** ve **packet switches** (iki predominant tip: **routers** ve **link-layer switches**) üzerinden travel eder. 
+Packets, her communication link üzerinde link'in **full transmission rate**'inde iletilir. Yani, eğer bir source end system veya packet switch, **L bits**'lik bir packet'i transmission rate'i **R bits/sec** olan bir link üzerinden gönderiyorsa, packet'i iletme süresi **L/R seconds**'dir.
+
+> Mesela şöyle, Transmission delay = Packet Length / Transmission Rate. Örneğin 1500 byte'lık (12000 bit) bir packet'i 1 Gbps link üzerinden göndermek: 12000 / 10^9 = 12 mikrosaniye. Ama aynı packet'i 1 Mbps link üzerinden göndermek: 12000 / 10^6 = 12 milisaniye. Arada 1000x fark var. Sınavlarda "bir packet'in link üzerinde geçiş süresi nedir?" diye sorarlarsa, propagation delay ile karıştırma. **Transmission delay** = paketi "push etmek" için geçen süre (L/R). **Propagation delay** = bit'in fiziksel olarak hattan gitmesi için geçen süre (mesafe/ışık hızı). İkisi farklı. Production'da bir darboğaz analizi yaparken, link'in transmission rate'ini ve queue'ların durumunu kontrol edersin. Eğer router buffer'ı doluysa, packet queue'da bekler — bu da **queuing delay**'e neden olur. L/R sadece "paketi hatta koyma" süresidir, queue'da bekleme dahil değil.
+
+## Store-and-Forward Transmission
+
+Çoğu packet switch, link'lerin input'larında **store-and-forward transmission** kullanır. 
+Store-and-forward transmission, packet switch'in outbound link üzerinde packet'in ilk bit'ini iletmeye başlamadan önce **tüm packet'i alması** gerektiği anlamına gelir. 
+Store-and-forward transmission'ı daha detaylı incelemek için, tek bir router ile bağlı iki end system'den oluşan basit bir network düşünelim, 
+Bir router tipik olarak birçok sayıda link'e sahiptir, çünkü görevi gelen bir packet'i outgoing bir link'e switch etmektir; bu basit örnekte, router'ın oldukça basit bir görevi vardır: bir packet'i bir (input) link'ten tek bağlı diğer link'e transfer etmek.
+
+## Store-and-Forward Packet Switching
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│    [Source]                    [Router]                  [Destination]      │
+│       💻                         (◯)                        💻              │
+│        │                          │                          │              │
+│        │    ═══════════════►      │                          │              │
+│        │    R bps                 │                          │              │
+│        │                          │                          │              │
+│        │  ┌───┐                   │                          │              │
+│        │  │ 3 │                   │  ┌─────────────────┐     │              │
+│        │  │ 2 │ ───────────────►  │  │      │                │              |
+│        │  │ 1 │  (packet bits     │  │    Burada 1 paket     │              |
+│        │  └───┘   geliyolar)      │  │    Bit diğerlerini,   |              │ 
+│        │                          │  │    Bekliyor...        │              |
+│        │                          │  └─────────────────┘     │              │
+│        │                          │                          │              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+Bu örnekte, source'un destination'a göndermek için üç packet'i var; her biri **L bits**'ten oluşuyor. Üstteki şemada gösterilen zaman anında, source packet 1'in bir kısmını iletmiş ve packet 1'in ön kısmı router'a ulaşmış durumda. 
+Router store-and-forward kullandığı için, bu an itibarıyla router aldığı bit'leri iletemez; bunun yerine önce packet'in bit'lerini buffer'lamalı (yani **"store"**). 
+Sadece router **tüm packet'in bit'lerini** aldıktan sonra, outbound link üzerinde packet'i iletmeye (yani **"forward"**) başlayabilir.
+
+Store-and-forward transmission'a biraz daha içgörü kazanmak için, source'un packet'i göndermeye başladığı andan destination'ın tüm packet'i aldığı ana kadar geçen süreyi hesaplayalım. 
+Burada propagation delay'i ihmal edeceğiz — bit'lerin tel üzerinden ışık hızına yakın bir hızda travel etmesi için geçen süre —. 
+Source zaman 0'da iletmeye başlar; zaman **L/R** saniyesinde, source tüm packet'i iletmiştir ve router tüm packet'i almış ve store etmiştir (propagation delay olmadığı için). 
+Zaman **L/R**'de, router tüm packet'i yeni aldığı için, outbound link üzerinde destination'a doğru packet'i iletmeye başlayabilir; zaman **2L/R**'de, router tüm packet'i iletmiştir ve destination tüm packet'i almıştır. Böylece, toplam delay **2L/R**'dir.
+
+Eğer switch bunun yerine bit'leri geldikleri gibi hemen forward etseydi (önce tüm packet'i almadan), toplam delay **L/R** olurdu çünkü bit'ler router'da bekletilmezdi. Ama daha sonra tartışacağımız gibi, router'lar forward etmeden önce tüm packet'i **receive, store ve process** etmek zorundadır.
+
+Şimdi, source'un ilk packet'i göndermeye başladığı andan destination'ın üç packet'in hepsini aldığı ana kadar geçen süreyi hesaplayalım. Daha önce olduğu gibi, zaman **L/R**'de router ilk packet'i forward etmeye başlar. Aynı zamanda zaman **L/R**'de, source tüm ilk packet'i göndermeyi bitirdiği için ikinci packet'i göndermeye başlayacaktır. Böylece, zaman **2L/R**'de destination ilk packet'i almıştır ve router ikinci packet'i almıştır. Benzer şekilde, zaman **3L/R**'de destination ilk iki packet'i almıştır ve router üçüncü packet'i almıştır. Son olarak, zaman **4L/R**'de destination tüm üç packet'i almıştır!
+
+Şimdi, source'dan destination'a **N** link'ten oluşan bir path üzerinden bir packet göndermenin genel durumunu düşünelim; her link'in rate'i **R**'dir (böylece source ve destination arasında **N-1** router vardır). Yukarıdaki aynı mantığı uygulayarak, end-to-end delay'in şu olduğunu görürüz:
+
+```
+┌────────────────────────────────────────┐
+│                                        │
+│         d_end-to-end = N × (L/R)       │
+│                                        │
+└────────────────────────────────────────┘
+```
+
+Şimdi, **P** packet'in **N** link serisi üzerinden gönderildiğinde delay'in ne olacağını belirlemek isteyebilirsiniz.
+
+> Router, paketin **tamamını** almadan bir bit bile forward etmez. Neden? Çünkü router paketin header'ını okumak zorunda — nereye gideceğini anlamak için. Ayrıca error checking yapar (CRC). Bu yüzden "cut-through switching" (geldikçe forward etme) daha hızlı gibi görünse de, modern router'lar store-and-forward kullanır çünkü güvenilirlik ve routing kararı için gerekli. Formül **d_end-to-end = N × (L/R)** — N link varsa, her link'te L/R transmission delay var. Ama bu sadece **transmission delay**, propagation delay ve queuing delay dahil değil. Sınavlarda "3 router'lı bir path'te 1 MB'lık bir dosya 1 Gbps link'te ne kadar sürede gider?" diye sorarlarsa, önce packet'lere böl, sonra N × L/R hesapla. Ama unutma: bu formül tek bir packet için. P packet için hesap yaparken, pipelining devreye girer — router bir packet'i forward ederken source bir sonrakini gönderiyor. Bu yüzden P packet için toplam delay ≈ (N + P - 1) × (L/R). Production'da bir traceroute çıktısındaki her hop, bir store-and-forward noktasıdır. Her router'da packet buffer'lanır, process edilir, sonra forward edilir. Bu yüzden latency = propagation + transmission + queuing + processing. Store-and-forward sadece transmission kısmını etkiler.
+
+## Queuing Delays and Packet Loss
+
+Her packet switch'in birden fazla link'i vardır. Her bağlı link için, packet switch'in bir **output buffer** (aynı zamanda **output queue** olarak da adlandırılır) vardır. 
+Bu buffer, router'ın o link'e göndermek üzere olduğu packet'leri saklar. Output buffer'lar packet switching'te kilit rol oynar. 
+Eğer gelen bir packet bir link'e iletilmesi gerekiyorsa ama o link başka bir packet'in iletimiyle meşgulse, gelen packet output buffer'da beklemek zorundadır. 
+Böylece, store-and-forward delay'lere ek olarak, packet'ler output buffer **queuing delay**'leri yaşarlar. 
+Bu delay'ler değişkendir ve network'teki tıkanıklık seviyesine bağlıdır. Buffer alanı sınırlı olduğu için, gelen bir packet buffer'ın tamamen dolu olduğunu fark edebilir. Bu durumda **packet loss** oluşur — ya gelen packet ya da zaten queue'da bekleyen packet'lerden biri **dropped** olur.
+
+## Packet Switching
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│    [Host A]            [Router]                    [Router]                 │
+│       💻                  (◯)                        (◯)                    │
+│        │                  │                          │                      │
+│        │ 100 Mbps         │                          │                      │
+│        │ Ethernet         │                          │                      │
+│        │                  │                          │                      │
+│        │    ┌───┐         │  ┌─────────────────┐     │                      │
+│        │    │ ▓▓│────────►│  │ Queue of packets│     │                      │
+│        │    │ ▓▓│         │  │ waiting for     │     │                      │
+│        │    └───┘         │  │ output link     │     │                      │
+│        │                  │  │  ▓▓ ▓▓ ▓▓ ▓▓    │     │                      │
+│        │                  │  └─────────────────┘     │                      │
+│        │                  │           │              │                      │
+│    [Host B]               │           │ 15 Mbps      │                      │
+│       💻──────────────────┘           │              │                      │
+│                                       ▼              │                      │
+│                                 [Host C] [Host D] [Host E]                  │
+│                                   💻       💻       💻                      │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+Şema basit bir packet-switched network'ü gösteriyor. Host A ve B'nin Host E'ye packet gönderdiğini varsayalım. Host A ve B önce packet'lerini **100 Mbps Ethernet** link'leri üzerinden ilk router'a gönderir. 
+Router daha sonra bu packet'leri **15 Mbps** link'e yönlendirir. Eğer kısa bir zaman aralığında router'a gelen packet'lerin geliş rate'i (bits per second'a çevrildiğinde) **15 Mbps'yi aşıyorsa**, router'da **tıkanıklık** oluşur çünkü packet'ler link üzerine iletilmeden önce link'in output buffer'ında kuyruk oluşturur. Örneğin, eğer Host A ve B aynı anda arka arkaya beşer packet gönderirse, bu packet'lerin çoğu kuyruk'da bir süre bekleyecektir. Bu durum aslında birçok günlük duruma tamamen benzer — örneğin bir banka için sırada beklemek veya bir gişenin önünde beklemek. 
+
+## Forwarding Tables and Routing Protocols
+
+Daha önce, bir router'ın bağlı communication link'lerinden birine ulaşan bir packet'i aldığını ve bu packet'i bağlı link'lerinden bir diğerine forward ettiğini söylemiştik. 
+Ama router bu packet'i hangi link'e forward etmesi gerektiğini nasıl belirler? Packet forwarding aslında farklı şekillerde yapılır.
+
+Internet'te, her end system'in **IP address** olarak adlandırılan bir adresi vardır. Bir source end system destination'a packet göndermek istediğinde, source packet'in header'ına destination'ın IP adresini ekler. 
+Posta adresleri gibi, bu adres de **hiyerarşik bir yapıya** sahiptir. Bir packet network'teki bir router'a ulaştığında, router packet'in destination adresinin bir kısmını inceler ve packet'i komşu bir router'a forward eder. 
+Daha spesifik olarak, her router'ın destination adreslerini (veya destination adreslerinin kısımlarını) o router'ın outbound link'lerine eşleyen bir **forwarding table**'ı vardır. 
+Bir packet router'a ulaştığında, router adresi inceler ve bu destination adresi kullanarak forwarding table'ını arar, uygun outbound link'i bulur. Router daha sonra packet'i bu outbound link'e yönlendirir.
+
+End-to-end routing süreci, harita kullanmayan ama bunun yerine yol tarifi sormayı tercih eden bir araba sürücüsüne benzer.
+
+Örneğin, Ahmet İstanbul’dan Antalya, Kaş’taki Atatürk Caddesi No: 42 adresine gidiyor olsun.
+
+İstanbul (Source): Ahmet önce mahallesindeki benzin istasyonuna gider ve Kaş, Antalya’daki Atatürk Caddesi No: 42 adresine nasıl gideceğini sorar. Benzin istasyonu görevlisi adresin Antalya kısmını çıkarır ve Ahmet’e hemen istasyonun yanından geçen O-4 / O-7 otoyoluna girip güneye devam etmesini söyler. Ayrıca Ahmet’e Afyon’a vardığında başka birine sorması gerektiğini belirtir.
+
+Afyon (Ara Router / Hop): Ahmet otoyolu takip ederek Afyonkarahisar’a kadar sürer; orada başka bir benzin istasyonu görevlisine yol tarifi sorar. Bu görevli adresin Kaş kısmını çıkarır ve Ahmet’e Burdur üzerinden devam etmesini, Burdur’da tekrar yol sorması gerektiğini söyler.
+
+Burdur (Ara Router / Hop): Burdur’daki benzin istasyonu görevlisi de adresin Kaş kısmını analiz eder ve Ahmet’e Fethiye/Kaş yönüne giden D635 karayoluna bağlanması gerektiğini söyler. Ahmet Kaş ilçe sınırından içeri girer.
+
+Kaş İlçe Merkezi (Yerel Router): Ahmet Kaş mevkisindeki başka bir benzin istasyonu görevlisine gider. Bu sefer görevli adresin Atatürk Caddesi kısmını çıkarır ve Ahmet’e merkeze inip Atatürk Caddesi’ne ulaşması için izlemesi gereken yerel caddeleri söyler.
+
+Atatürk Caddesi (En Yakın Node/Hop): Ahmet Atatürk Caddesi’ne ulaştığında, kaldırımda yürüyen bir kuryeye hedefine nasıl ulaşacağını sorar. Kurye adresin No: 42 kısmını çıkarır ve binayı doğrudan gösterir.
+
+Ahmet sonunda nihai destination’ına ulaşır.
+
+Bu analojide, yol boyunca tarif veren benzin istasyonu görevlileri ve kurye birer router’a karşılık gelir. Her biri paketin (arabanın) üzerindeki adres bilgisini katman katman inceleyerek bir sonraki hop’a yönlendirir.
+
+Bir router'ın packet'in destination adresini kullanarak forwarding table'ını index'lediğini ve uygun outbound link'i belirlediğini öğrendik. 
+Ama bu ifade bir başka soruyu gündeme getiriyor: Forwarding table'lar nasıl oluşturulur? Her router'da elle mi configure edilirler, yoksa Internet daha otomatik bir prosedür mü kullanır? Ama şimdilik iştahımızı kabartmak için, Internet'in forwarding table'ları otomatik olarak ayarlamak için kullanılan bir dizi özel **routing protocol**'ü olduğunu not edelim. Örneğin bir routing protocol, her router'dan her destination'a **en kısa path'i** belirleyebilir ve en kısa path sonuçlarını router'lardaki forwarding table'ları configure etmek için kullanabilir.
+
+> İşte burada iki kritik kavram: **Forwarding** ve **Routing**. Forwarding = local action. Router gelen pakete bakar, forwarding table'dan çıkış portunu bulur, gönderir. Milisaniyeler içinde gerçekleşir. Routing = global process. Tüm network'ün topolojisini bilerek en iyi path'i hesaplar. Dakikalar/saatler içinde gerçekleşir. "Forwarding table" data plane'de (hızlı, hardware), "Routing protocol" control plane'de (yavaş, software) çalışır. Bu ayrımı unutma, SDN (Software-Defined Networking) konseptinin temeli bu. Ayrıca queuing delay = tıkanıklık göstergesidir. Production'da `ping` ile RTT ölçüyorsun, birden bire artarsa router queue'ları doluyor demektir. `show interfaces` ile output drops ve queue depth kontrol edersin. Packet loss = TCP throughput düşer (congestion window küçülür), UDP ise paketi kaybeder. Sınavlarda "router neden packet drop eder?" diye sorarlarsa, "buffer overflow" diyebiliriz. RED (Random Early Detection) ve ECN gibi mekanizmalar bunu önlemek için var. Ayrıca Ahmet'in yolculuğundaki "hiyerarşik adres çıkarma" mantığı, IP adreslerinin CIDR (Classless Inter-Domain Routing) yapısına tamamen uyar: Router en spesifik match'e bakar. Bu, forwarding table lookup'ın temelidir.
+
