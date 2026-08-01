@@ -844,3 +844,53 @@ Ama bu ifade bir başka soruyu gündeme getiriyor: Forwarding table'lar nasıl o
 
 > İşte burada iki kritik kavram: **Forwarding** ve **Routing**. Forwarding = local action. Router gelen pakete bakar, forwarding table'dan çıkış portunu bulur, gönderir. Milisaniyeler içinde gerçekleşir. Routing = global process. Tüm network'ün topolojisini bilerek en iyi path'i hesaplar. Dakikalar/saatler içinde gerçekleşir. "Forwarding table" data plane'de (hızlı, hardware), "Routing protocol" control plane'de (yavaş, software) çalışır. Bu ayrımı unutma, SDN (Software-Defined Networking) konseptinin temeli bu. Ayrıca queuing delay = tıkanıklık göstergesidir. Production'da `ping` ile RTT ölçüyorsun, birden bire artarsa router queue'ları doluyor demektir. `show interfaces` ile output drops ve queue depth kontrol edersin. Packet loss = TCP throughput düşer (congestion window küçülür), UDP ise paketi kaybeder. Sınavlarda "router neden packet drop eder?" diye sorarlarsa, "buffer overflow" diyebiliriz. RED (Random Early Detection) ve ECN gibi mekanizmalar bunu önlemek için var. Ayrıca Ahmet'in yolculuğundaki "hiyerarşik adres çıkarma" mantığı, IP adreslerinin CIDR (Classless Inter-Domain Routing) yapısına tamamen uyar: Router en spesifik match'e bakar. Bu, forwarding table lookup'ın temelidir.
 
+# 1.3.2 Circuit Switching
+
+Links ve switches'ten oluşan bir network üzerinden data taşımanın iki temel yaklaşımı vardır: **circuit switching** ve **packet switching**. Önceki konuda packet-switched network'leri ele aldık, şimdi dikkatimizi circuit-switched network'lere çeviriyoruz.
+
+Circuit-switched network'lerde, end systems arasındaki communication session süresi boyunca path üzerinde ihtiyaç duyulan kaynaklar (buffer'lar, link transmission rate) **reserved** (ayrılmış) edilir. Packet-switched network'lerde ise bu kaynaklar **reserved değildir**; bir session'ın mesajları kaynakları ihtiyaç duyduklarında kullanır ve sonuç olarak bir communication link'e erişim için beklemek zorunda kalabilirler (yani **queue**). 
+Basit bir analoji olarak, iki restoran düşünelim: biri rezervasyon gerektirir, diğeri ne rezervasyon ister ne de kabul eder. Rezervasyon gerektiren restoran için, evden çıkmadan önce arayıp rezervasyon yaptırma zahmetine katlanmamız gerekir. Ama restorana vardığımızda, prensip olarak hemen oturur ve siparişimizi veririz. Rezervasyon gerektirmeyen restoran için, masa rezerve etmekle uğraşmamıza gerek yoktur. Ama restorana vardığımızda, oturmadan önce bir masa için beklememiz gerekebilir.
+
+Geleneksel telefon network'leri, circuit-switched network'lerin örnekleridir. Bir kişinin telefon network'ü üzerinden başka birine bilgi (ses veya faks) göndermek istediğinde neler olduğunu düşünelim. 
+Gönderen bilgiyi göndermeden önce, network sender ve receiver arasında bir connection kurmalıdır. Bu, sender ve receiver arasındaki path üzerindeki switch'lerin o connection için connection state'ini sürdürdüğü **bona fide** (gerçek) bir connection'dır. Telephony jargonunda, bu connection'a bir **circuit** denir. Network circuit'ı kurduğunda, aynı zamanda connection süresi boyunca network link'lerinde sabit bir transmission rate'i de reserve eder (her link'in transmission capacity'sinin bir kısmını temsil eder). Belirli bir transmission rate bu sender-to-receiver connection için reserve edildiğinden, sender data'yı receiver'a **garantili sabit hızda** transfer edebilir.
+
+Aşağıda bir circuit-switched network'ü gösteriyor. Bu network'te, dört circuit switch birbirine dört link ile bağlıdır. Bu link'lerin her biri dört circuit'e sahiptir, böylece her link dört eşzamanlı connection'ı destekleyebilir. Host'lar (örneğin PC'ler ve workstation'lar) her biri doğrudan switch'lerden birine bağlıdır. İki host iletişim kurmak istediğinde, network iki host arasında dedicated yani özel bir **end-to-end connection** kurar. Böylece, Host A'nın Host B ile iletişim kurması için, network önce iki link'in her birinde bir circuit reserve etmelidir. Bu örnekte, dedicated end-to-end connection ilk link'teki ikinci circuit'i ve ikinci link'teki dördüncü circuit'i kullanır.
+
+---
+
+## Figure 1.13 — A Simple Circuit-Switched Network
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│    [Host A]                                    [Host B]                     │
+│       💻                                          💻                         │
+│        │                                          │                         │
+│        │                                          │                         │
+│        └──────────┐                    ┌──────────┘                         │
+│                   (◯)══════════════════(◯)                                  │
+│                   [SW1]    Link 1      [SW2]                                 │
+│                     │    4 circuits      │                                   │
+│                     │                    │                                   │
+│                     │   Circuit 2 used   │                                   │
+│                     │   for A→B          │                                   │
+│                     │                    │                                   │
+│                    (◯)══════════════════(◯)                                  │
+│                   [SW3]    Link 2      [SW4]                                 │
+│                     │    4 circuits      │                                   │
+│                     │                    │                                   │
+│                     │   Circuit 4 used   │                                   │
+│                     │   for A→B          │                                   │
+│                     │                    │                                   │
+│        ┌──────────┘                      └──────────┐                        │
+│        │                                            │                        │
+│    [Host C]                                    [Host D]                     │
+│       💻                                          💻                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+Her link dört circuit'e sahip olduğu için, end-to-end connection tarafından kullanılan her link için connection, connection süresi boyunca link'in toplam transmission capacity'sinin **dörtte birini** alır. Böylece, örneğin, komşu switch'ler arasındaki her link 1 Mbps transmission rate'e sahipse, her end-to-end circuit-switch connection **250 kbps** dedicated transmission rate alır.
+
+Buna karşılık, bir host'un packet-switched bir network üzerinden (Internet gibi) başka bir host'a packet göndermek istediğinde neler olduğunu düşünelim. Circuit switching'te olduğu gibi, packet bir dizi communication link üzerinden iletilir. Ama circuit switching'ten farklı olarak, packet **hiçbir link kaynağını reserve etmeden** network'e gönderilir. Eğer link'lerden biri, aynı anda başka packet'lerin de iletilmesi gerektiği için tıkanık ise, o zaman packet transmission link'in gönderici tarafındaki bir buffer'da beklemek zorunda kalacak ve bir delay yaşayacaktır. Internet packet'ları zamanında teslim etmek için elinden geleni yapar, ancak herhangi bir **garanti vermez**.
+
+> İşte packet switching vs circuit switching'in kritik noktaları burası. **Circuit switching = garanti, ama israf.** Rezervasyon yaptın, masanın boş da kalsa o masa senin. Telefon konuşması sırasında sessiz kalırsan, o bandwidth çöpe gidiyor. **Packet switching = paylaşım, ama garanti yok.** Masaya oturan varsa beklersin, ama boş masaları kimseye ayırmıyoruz, herkes kullanabiliyor. Bu yüzden Internet packet switching kullanır — daha verimli. Ama VoIP veya video conference gibi real-time uygulamalarda QoS (Quality of Service) gerekebilir, işte o zaman circuit switching mantığına yaklaşan mekanizmalar (IntServ, DiffServ) devreye girer. 250 kbps hesabı: 1 Mbps / 4 circuit = 250 kbps. Bu **FDM (Frequency Division Multiplexing)** veya **TDM (Time Division Multiplexing)** ile yapılır. TDM'de her circuit farklı time slot'u kullanır, FDM'de farklı frequency band'ı. Geleneksel telefon hizmetleri TDM kullanır (64 kbps per circuit, E1/T1 hatlar). Sınavlarda "neden Internet packet switching kullanıyor?" diye sorarlarsa, "kaynak kullanımı daha verimli, ani trafik artışına uygun,  hataya dayanıklı" diyebiliriz. "Circuit switching nerede kullanılır?" → "Telephony, dedicated leased lines, real-time garanti gereken yerler."
