@@ -856,9 +856,7 @@ Gönderen bilgiyi göndermeden önce, network sender ve receiver arasında bir c
 
 Aşağıda bir circuit-switched network'ü gösteriyor. Bu network'te, dört circuit switch birbirine dört link ile bağlıdır. Bu link'lerin her biri dört circuit'e sahiptir, böylece her link dört eşzamanlı connection'ı destekleyebilir. Host'lar (örneğin PC'ler ve workstation'lar) her biri doğrudan switch'lerden birine bağlıdır. İki host iletişim kurmak istediğinde, network iki host arasında dedicated yani özel bir **end-to-end connection** kurar. Böylece, Host A'nın Host B ile iletişim kurması için, network önce iki link'in her birinde bir circuit reserve etmelidir. Bu örnekte, dedicated end-to-end connection ilk link'teki ikinci circuit'i ve ikinci link'teki dördüncü circuit'i kullanır.
 
----
-
-## Figure 1.13 — A Simple Circuit-Switched Network
+##  Circuit-Switched Network
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
