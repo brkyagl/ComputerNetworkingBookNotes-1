@@ -1130,3 +1130,30 @@ Yani propagation delay **d/s**'dir; burada **d** router A ile router B arasında
 Packet'in son bit'i node B'ye yayılır yayınlmaz, packet'in tüm önceki bit'leri router B'de store edilmiş olur. 
 Tüm süreç daha sonra router B'nin forwarding'i gerçekleştirmesiyle devam eder. Wide-area network'lerde propagation delay'ler **milisaniye** mertebesindedir.
 
+## Karşılaştırma: Transmission ve Propagation Delay
+
+Computer networking alanına yeni gelenler bazen transmission delay ile propagation delay arasındaki farkı anlamakta zorluk çeker. 
+Fark ince ama önemlidir. **Transmission delay**, router'ın packet'i hattan çıkarması için gereken süre miktarıdır; packet'in uzunluğunun ve link'in transmission rate'inin bir fonksiyonudur, ancak iki router arasındaki mesafe ile **hiçbir ilgisi yoktur**. **Propagation delay** ise, diğer yandan, bir bit'in bir router'dan diğerine yayılması için geçen süredir; iki router arasındaki mesafenin bir fonksiyonudur, ancak packet'in uzunluğu veya link'in transmission rate'i ile **hiçbir ilgisi yoktur**.
+
+Bir analoji, transmission ve propagation delay kavramlarını açıklığa kavuşturabilir. Her **100 kilometrede** bir gişesi olan bir otoyol düşünelim.
+Gişeler arasındaki otoyol segment'lerini link'ler ve gişeleri router'lar olarak düşünebilirsiniz. Arabaların otoyol'da **100 km/saat** hızla seyahat ettiğini varsayalım (yani bir araba gişeden çıktığında, anında 100 km/saat hıza çıkar ve gişeler arasında bu hızı korur). Daha sonra, bir araba kervanı olarak birlikte seyahat eden **10 araba**nın sabit bir sırayla birbirini takip ettiğini varsayalım. Her arabayı bir bit ve kervanı bir packet olarak düşünebilirsiniz. 
+Ayrıca her gişenin **12 saniyede bir araba**yı servis ettiğini (yani ilettiğini) varsayalım; ve gece geç saat olduğu için kervanın arabaları otoyol'daki tek arabalar. 
+Son olarak, kervanın ilk arabası bir gişeye ulaştığında, diğer dokuz araba gelip arkasında sıralanana kadar gişe girişinde bekler. (Böylece, kervanın tamamı forward edilmeye başlamadan önce gişede **store** edilmelidir.) 
+Gişenin tüm kervanı otoyol'a çıkarması için gereken süre **(10 araba)/(5 araba/dakika) = 2 dakikadır**. Bu süre, bir router'daki **transmission delay**'e benzer. 
+Bir arabanın bir gişeden çıkışından sonraki gişeye seyahat etmesi için gereken süre **100 km/(100 km/saat) = 1 saattir**. Bu süre **propagation delay**'e benzer. 
+Dolayısıyla, kervan bir gişenin önünde store edildiğinden, bir sonraki gişenin önünde store edilene kadar geçen süre, transmission delay ve propagation delay'nin toplamıdır — bu örnekte **62 dakika**.
+
+Eğer bir kervan için gişe servis süresi, bir arabanın gişeler arası seyahat süresinden daha uzun olsaydı ne olurdu? Örneğin, şimdi arabaların **1.000 km/saat** hızla seyahat ettiğini ve gişenin **dakikada bir araba** hızında servis yaptığını varsayalım. O zaman iki gişe arasındaki seyahat süresi **6 dakika** ve bir kervanı servis etme süresi **10 dakika**dır. Bu durumda, kervanın ilk birkaç arabası ikinci gişeye, kervanın son arabaları ilk gişeden ayrılmadan önce ulaşacaktır. 
+Bu durum packet-switched network'lerde de ortaya çıkar — bir packet'in ilk bit'leri bir router'a ulaşabilirken, packet'in kalan birçok bit'i hâlâ önceki router tarafından iletilmek için beklemektedir.
+
+Eğer processing, queueing, transmission ve propagation delay'leri sırasıyla $d_{\text{proc}}$, $d_{\text{queue}}$, $d_{\text{trans}}$ ve $d_{\text{prop}}$ ile gösterirsek, o zaman toplam nodal delay şu şekilde verilir:
+
+$$d_{\text{nodal}} = d_{\text{proc}} + d_{\text{queue}} + d_{\text{trans}} + d_{\text{prop}}$$
+
+Bu delay component'lerinin katkısı önemli ölçüde değişebilir. Örneğin, $d_{\text{prop}}$ aynı üniversite kampüsündeki iki router'ı bağlayan bir link için ihmal edilebilir olabilir (örneğin birkaç mikrosaniye); ancak, jeostasyonel uydu link ile birbirine bağlı iki router için $d_{\text{prop}}$ yüzlerce milisaniyedir ve $d_{\text{nodal}}$ içinde dominant terim olabilir. Benzer şekilde, $d_{\text{trans}}$ ihmal edilebilirdan önemliye kadar değişebilir. 
+Katkısı 10 Mbps ve daha yüksek transmission rate'ler için (örneğin LAN'lar için) tipik olarak ihmal edilebilir; ancak, düşük hızlı dial-up modem link'leri üzerinden gönderilen büyük Internet packet'leri için yüzlerce milisaniye olabilir. 
+Processing delay $d_{\text{proc}}$ genellikle ihmal edilebilir; ancak, bir router'ın maksimum verimini — yani bir router'ın packet'leri forward edebileceği maksimum rate'i — güçlü bir şekilde etkiler.
+
+> **Transmission delay = gişede bekleme + servis süresi** (packet'i hattan çıkarma). **Propagation delay = yolda geçen süre** (bit'in fiziksel seyahati). İkisi tamamen bağımsız. Karavan analojisinde: 10 araba = L (packet length), 1 araba/12s = R (transmission rate). L/R = 10/(1/12) = 120s = 2dk. Propagation = 100km/100kph = 1 saat. 
+> $$d_{\text{nodal}} = d_{\text{proc}} + d_{\text{queue}} + d_{\text{trans}} + d_{\text{prop}}$$
+> Sınavlarda "transmission ve propagation farkı?" diye sorarlarsa: "Transmission packet'in boyutuna ve hıza bağlı, mesafeye değil. Propagation mesafeye ve ortam hızına bağlı, packet boyutuna değil." İkinci senaryoda (1000km/h, 1 araba/dk), kervan ilk gişede hâlâ servis edilirken arabalar ikinci gişeye ulaşıyor — bu **store-and-forward pipeline**'ı gösterir. Production'da bu, yüksek hızlı link'lerde (propagation küçük) ve büyük packet'lerde (transmission büyük) gerçekleşir. Ayrıca $d_{\text{proc}}$ ihmal edilebilir gibi görünse de, router'ın forwarding kapasitesini belirler — 1 Mpps (million packets per second) router'ın processing delay'i 1 µs'dir. Bu, datacenter switch'lerinde kritik.
