@@ -1033,3 +1033,99 @@ Kendi network'ünü oluşturarak, bir content provider sadece üst katman ISP'le
 Özetle, günümüz Internet'i — bir network of networks — karmaşıktır; yaklaşık bir düzine tier-1 ISP ve yüz binlerce alt katman ISP'den oluşur. ISP'ler kapsamlarında çeşitlilik gösterir; bazıları birden fazla kıtayı ve okyanusu kapsarken, diğerleri dar coğrafi bölgelerle sınırlıdır. Alt katman ISP'ler üst katman ISP'lere bağlanır, ve üst katman ISP'ler birbirine bağlanır. Kullanıcılar ve content provider'lar alt katman ISP'lerin customer'larıdır, ve alt katman ISP'ler üst katman ISP'lerin customer'larıdır. Son yıllarda, büyük content provider'lar kendi network'lerini de oluşturmuş ve mümkün olduğunda doğrudan alt katman ISP'lere bağlanmışlardır.
 
 > **Customer-Provider** ilişkisi = para akar. **Peering** = settlement-free, eşitler arası. **Tier-1** = transit ödemeyen, sadece peer yapan. "Tier-1 misin?" sorusu aslında "başka bir Tier-1'e para ödüyor musun?" sorusudur. Eğer ödüyorsan Tier-1 değilsin. Multi-homing = redundancy. Bir ISP birden fazla upstream'e bağlanırsa, biri düşse diğeri ayakta. Production'da bu hayati. IXP'ler peering'in fiziksel yeridir; Amsterdam AMS-IX, Frankfurt DE-CIX dünyanın en büyük IXP'lerindendir. Content provider'ların (Google, Netflix, Facebook) kendi backbone'larını kurması, "bypassing Tier-1" stratejisidir. Google Global Cache, ISP'nin içine konur, YouTube videoları oradan servis edilir — bu hem Google'a hem ISP'ye para kazandırır. [PeeringDB 2025] = 600+ IXP. [Arnold 2020] = %76 Internet'e Tier-1'siz erişim. Bu rakamlar değişebilir ama trend aynı: content provider'lar kendi network'lerini kuruyor, Internet merkezileşiyor. "Internet nedir?" diye sorarlarsa, "bir network of networks, tiered hierarchy, peering ve transit ilişkileriyle birbirine bağlı otonom sistemler" demek çok iyi. AS (Autonomous System) numaraları bu hiyerarşinin temelidir; her ISP'nin bir AS numarası vardır. BGP (Border Gateway Protocol) bu AS'ler arası routing yapar. 
+
+---
+
+# 1.4 Delay, Loss, ve Packet-Switched Ağlarda Verim
+
+Internet'in end systems'te çalışan distributed applications'a hizmet veren bir altyapı olarak görülebileceğini söylemiştik. 
+İdeal olarak, Internet servislerinin herhangi iki end system arasında, aynı anda, istediğimiz kadar data kaybetmeden taşıyabilmesini isteriz.
+Ne yazık ki bu, gerçekte ulaşılamaz olan yüce bir hedeftir. Bunun yerine, bilgisayar ağlarının verimini (saniye başına aktarılabilen veri miktarını) kaçınılmaz olarak sınırlar, end systems arasında delay'ler yaratır ve aslında packet'leri kaybedebilir. Bir yandan, fiziksel gerçekliğin yasaları delay ve loss'u yaratır ve verimi kısıtlar. Diğer yandan, computer networks'lerin bu problemleri olması nedeniyle, bu problemlerle nasıl başa çıkılacağına dair birçok büyüleyici konu vardır.
+
+## 1.4.1 Overview of Delay in Packet-Switched Networks
+
+Hatırlayın ki bir packet bir host'ta (source) başlar, bir dizi router'dan geçer ve yolculuğunu başka bir host'ta (destination) sonlandırır. 
+Bir packet bu path boyunca bir node'dan (host veya router) sonraki node'a (host veya router) travel ederken, packet path boyunca her node'da birkaç delay tipinden muzdariptir. 
+Bu delay'lerin en önemlileri **nodal processing delay**, **queuing delay**, **transmission delay** ve **propagation delay**'dir; bunlar birlikte **total nodal delay**'i oluşturur. 
+Birçok Internet application'ının performansı — örneğin search, Web browsing, e-mail, maps, instant messaging ve voice-over-IP — network delay'lerden büyük ölçüde etkilenir. Packet switching ve computer networks'i derinlemesine anlamak için, bu delay'lerin doğasını ve önemini anlamalıyız.
+
+## The Nodal Delay at Router A
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│   [PC]        [PC]                                          │
+│    💻          💻    ──────►                                │
+│     │           │        │                                  │
+│     └─────┬─────┘        │                                  │
+│           │              │                                  │
+│           ▼              │                                  │
+│         [Router A] ◄─────┘                                  │
+│           (◯)                                               │
+│           │                                                 │
+│    ┌──────┴──────┐                                          │
+│    │  Nodal      │                                          │
+│    │  processing │  ← Packet header'ı okuma, error check    │
+│    │             │                                          │
+│    │  Queuing    │  ← Output buffer'da bekleme              │
+│    │  (waiting   │                                          │
+│    │   for tx)   │                                          │
+│    │             │                                          │
+│    │ Transmission│ ← Packet'i hatta koyma                   │
+│    │             │                                          │
+│    └──────┬──────┘                                          │
+│           │                                                 │
+│           ▼                                                 │
+│         Propagation  ← Bit'in hattan gitmesi                │
+│           │                                                 │
+│           ▼                                                 │
+│         [Router B]                                          │
+│           (◯)                                               │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+>  İşte dört delay'in tanımı burada, bunları iyice sindirmek lazım:
+> - **Processing Delay:** Router packet'i alır, header'ı okur, checksum kontrolü yapar, forwarding table lookup yapar. Mikrosaniye seviyesinde.
+> - **Queuing Delay:** Packet output buffer'da bekler. Değişken, tıkanıklığa bağlı. 
+> - **Transmission Delay:** Tüm packet'i hatta "push etmek" için geçen süre. **L/R** (Length/Rate). Paket büyükse veya link yavaşsa artar.
+> - **Propagation Delay:** Bit'in fiziksel olarak hattan gitmesi. **d/s** (distance/speed). Işık hızına yakın, ama mesafe uzunsa artar.
+
+## Types of Delay
+
+Bu delay'leri yukarıdaki şema bağlamında inceleyelim. Source ve destination arasındaki end-to-end route'un bir parçası olarak, bir packet upstream node'dan router A üzerinden router B'ye gönderilir. 
+Amacımız, router A'daki nodal delay'i karakterize etmektir. Router A'nın router B'ye giden bir outbound link'i olduğunu not edin. 
+Bu link'in önünde bir **queue** (aynı zamanda **buffer** olarak da bilinir) bulunur. Packet upstream node'dan router A'ya ulaştığında, router A packet'in header'ını inceler ve packet için uygun outbound link'i belirler ve daha sonra packet'i bu linke yönlendirir. Bu örnekte, packet için outbound link, router B'ye giden link'tir. Bir packet, eğer link üzerinde şu anda başka bir packet iletilmiyorsa ve queue'da kendisinden önce başka packet yoksa, bir link üzerinde iletilebilir; eğer link şu anda meşgulse veya link için zaten queue'lanmış başka packet'ler varsa, yeni gelen packet queue'ya katılır.
+
+### PROCESSING DELAY
+
+Packet'in header'ını incelemek ve packet'i nereye yönlendireceğini belirlemek için gereken zaman, **processing delay**'in bir parçasıdır. 
+Processing delay aynı zamanda upstream node'dan router A'ya packet'in bit'lerinin iletimi sırasında oluşan bit-level error'ları kontrol etmek için gereken zaman gibi diğer faktörleri de içerebilir. 
+High-speed router'lardaki processing delay'ler tipik olarak **mikrosaniye** veya daha az mertebesindedir. Bu nodal processing'den sonra, router packet'i router B'ye giden link'in önündeki queue'a yönlendirir. 
+
+### QUEUING DELAY
+
+Queue'da, packet link üzerine iletilmek için beklerken bir **queuing delay** yaşar. Spesifik bir packet'in queuing delay uzunluğu, daha önce gelmiş ve link üzerine iletilmek için queue'lanmış bekleyen packet'lerin sayısına bağlıdır. 
+Eğer queue boşsa ve link üzerinde şu anda başka bir packet iletilmiyorsa, o zaman packet'imizin queuing delay'i sıfır olur. 
+Diğer yandan, eğer traffic yoğunsa ve birçok başka packet de iletilmek için bekliyorsa, queuing delay uzun olacaktır. 
+Kısa süre içinde göreceğimiz gibi, gelen bir packet'in bulmayı bekleyebileceği packet sayısı, queue'a ulaşan traffic'in yoğunluğu ve doğasına bağlı bir fonksiyondur. 
+Pratikte queuing delay'ler **mikrosaniyeden milisaniyeye** kadar mertebesinde olabilir.
+
+### TRANSMISSION DELAY
+
+Packet'lerin first-come-first-served (ilk gelen ilk hizmet alır) şeklinde iletildiğini varsayarsak — ki bu packet-switched network'lerde yaygındır — packet'imiz sadece kendisinden önce gelmiş tüm packet'ler iletildikten sonra iletilebilir. 
+Packet'in uzunluğunu **L bits** ile, router A'dan router B'ye giden link'in transmission rate'ini **R bits/sec** ile gösterelim. Örneğin, 10 Mbps Ethernet link için **R = 10 Mbps**; 100 Mbps Ethernet link için **R = 100 Mbps**. **Transmission delay L/R'dir.** Bu, packet'in tüm bit'lerini link'e push etmek (yani iletmek) için gereken süredir. Transmission delay'ler pratikte tipik olarak **mikrosaniyeden milisaniyeye** kadar mertebesindedir.
+
+### PROPAGATION DELAY
+
+Bir bit link'e push edildikten sonra, router B'ye yayılması (propagate) gerekir. Link'in başından router B'ye yayılması için gereken süre **propagation delay**'dir. 
+Bit, link'in **propagation speed**'inde yayılır. Propagation speed, link'in fiziksel ortamına (yani fiber optics, twisted-pair copper wire vb.) bağlıdır ve şu aralıktadır:
+
+```
+2 × 10⁸ meters/sec  to  3 × 10⁸ meters/sec
+```
+
+Bu, ışık hızına eşit veya biraz daha azdır. Propagation delay, iki router arasındaki mesafe propagation speed'e bölünerek hesaplanır. 
+Yani propagation delay **d/s**'dir; burada **d** router A ile router B arasındaki mesafe ve **s** link'in propagation speed'idir. 
+Packet'in son bit'i node B'ye yayılır yayınlmaz, packet'in tüm önceki bit'leri router B'de store edilmiş olur. 
+Tüm süreç daha sonra router B'nin forwarding'i gerçekleştirmesiyle devam eder. Wide-area network'lerde propagation delay'ler **milisaniye** mertebesindedir.
