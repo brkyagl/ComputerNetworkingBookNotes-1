@@ -1193,3 +1193,72 @@ https://computerscience.unicam.it/marcantoni/reti/applet/QueuingAndLossInteracti
 > $$\text{Traffic Intensity} = \frac{La}{R}$$
 > $L$ = packet length (bits), $a$ = arrival rate (packets/sec), $R$ = transmission rate (bits/sec). Bu formülü aklına yazmak lazım. $La/R > 1$ = queue sonsuz büyür, delay → ∞. $La/R \le 1$ = stable ama patlamalı traffic varsa yine queue oluşur. Sınavda "router queue neden doluyor?" diye sorarlarsa, "varış rate'i hizmet rate'ni aşıyor, traffic yoğunluğu > 1". Ayrıca "yoğunluk 1'e yaklaştıkça delay üstel artar" — bu queueing theory'den M/M/1 modeli. Production'da monitoring yaparken, link kullanım oranı %80'i geçince queuing delay patlar. Bu yüzden network design'da "boşluk yüksekliği" bırakılır, %70-75 max. [Bertsekas 1991] = Data Networks kitabı, queueing theory klasik. [Kleinrock 1975, 1976] = queueing theory'in babası.
 
+## Packet Loss
+
+Yukarıdaki tartışmalarımızda, queue'un sonsuz sayıda packet tutabilme kapasitesine sahip olduğunu varsaymıştık. 
+Gerçekte, bir link'in önündeki queue sonlu bir kapasiteye sahiptir, bununla birlikte queue kapasitesi büyük ölçüde router'ın tasarımına ve maliyetine bağlıdır. 
+Queue capacity sonlu olduğu için, traffic yoğunluğu 1'e yaklaştıkça packet delay'leri gerçekte sonsuza yaklaşmaz. 
+Bunun yerine, bir packet dolu bir queue bulabilir. Böyle bir packet'i store edecek yer olmadığında, router o packet'i **drop** eder; yani packet **lost** olur. 
+
+Bir end-system bakış açısı'ndan, packet loss, bir packet'in network core'a iletilmiş ama destination'da network'ten hiç çıkmamış gibi görünmesi gibidir. 
+Trafik yoğunluğu arttıkça kayıp paketlerin oranı da artar. Bu nedenle, bir node'daki performance sadece delay açısından değil, aynı zamanda **packet loss olasılığı** açısından da ölçülür. 
+Sonraki konularda tartışacağımız gibi, kayıp bir packet source'dan destination'a tüm data'nın nihayetinde transfer edilmesini sağlamak etmek için end-to-end bazda **retransmit** edilebilir.
+
+> Teorik olarak $La/R \to 1$'de delay $\to \infty$. Ama pratikte queue sonlu, o yüzden packet drop olur. Bu yüzden "delay sonsuz" değil, "packet loss artar". Production'da router buffer'ı dolunca **tail drop** yapar — yeni gelen paket atılır. Ama modern router'lar **RED (Random Early Detection)** veya **WRED** kullanır; queue dolmadan önce rastgele paket atar, böylece TCP congestion window'ları küçülür ve queue boşalır. 
+
+## 1.4.3 End-to-End Delay
+
+Bu noktaya kadar olan tartışmamız **nodal delay**'e odaklanmıştı; yani tek bir router'daki delay'e. Şimdi source'dan destination'a toplam delay'i düşünelim. 
+Bu konsepti ele almak için, source host ile destination host arasında **N-1** router olduğunu varsayalım. Ayrıca şimdilik network'ün uncongested(tıkanmamış) olduğunu varsayalım (böylece queuing delay'ler ihmal edilebilir), her router'daki ve source host'taki processing delay **$d_{\text{proc}}$**, her router'dan ve source host'tan çıkış transmission rate'i **R bits/sec**, ve her link'teki propagation delay **$d_{\text{prop}}$** olsun. Nodal delay'ler birikir ve bir end-to-end delay verir:
+
+$$d_{\text{end-end}} = N(d_{\text{proc}} + d_{\text{trans}} + d_{\text{prop}})$$ (Equation 1.2)
+
+burada, bir kez daha, $d_{\text{trans}} = L/R$; burada $L$ packet size'dır. Not edin ki Equation 1.2, Equation 1.1'in bir genellemesidir; processing ve propagation delay'leri hesaba katmaz. Size Equation 1.2'yi, node'lardaki heterogeneous delay'ler durumuna ve her node'daki ortalama bir queuing delay'in varlığına genelleştirmeyi bir alıştırma olarak bırakıyoruz diye not düşmüşler.
+
+## Traceroute
+
+Computer network'te end-to-end delay hakkında uygulamalı bir his elde etmek için, **Traceroute** programını kullanabiliriz. 
+Traceroute, herhangi bir Internet host'unda çalıştırılabilen basit bir programdır. Kullanıcı bir destination hostname belirttiğinde, source host'taki program destination'a doğru birden fazla özel packet'ler gönderir. 
+Bu packet'ler destination'a doğru ilerlerken, bir dizi router'dan geçerler. Bir router bu özel packet'lerden birini aldığında, source'a router'ın adını ve adresini içeren kısa bir mesaj gönderir.
+
+Daha spesifik olarak, source final destination'a adreslenmiş bir dizi özel packet'i network'e gönderir. 
+Bu packet'lerin ilki 1 olarak işaretlenir, ikincisi 2 olarak işaretlenir ve böyle devam eder. Source ile destination arasındaki her router bu özel packet'lerden birini aldığında, marking'i bir azaltır ve packet'i yoluna devam ettirir. 
+Ancak, eğer bir router'da marking sıfıra düşerse, router packet'i destination'a doğru forward etmez; bunun yerine source'a bir mesaj gönderir. 
+Destination host 1 olarak işaretlenmiş bir packet aldığında, o da source'a bir mesaj döndürür. (Host'tan mesaj aldıktan sonra, source bu özel packet'leri göndermeyi durdurur.) 
+Source, bir packet gönderdiği ile karşılık gelen return mesajını aldığı arasında geçen süreyi kaydeder; ayrıca router'ın (veya destination host'un) adını ve adresini kaydeder. 
+Bu şekilde, source source'dan destination'a akan packet'lerin aldığı route'u yeniden oluşturabilir ve source arada geçen router'ların tümüne olan round-trip delay'leri belirleyebilir. 
+Traceroute aslında az önce tanımlanan deneyi üç kez tekrarlar, böylece source toplam **$3 \cdot N$** packet'i destination'a gönderir; burada N-1 source ile destination arasındaki router sayısıdır. RFC 1393 Traceroute'u detaylıca açıklar.
+
+İşte Traceroute programının çıktısına bir örnek; burada route, source host **gaia.cs.umass.edu** (Massachusetts Üniversitesi'nde) ile Paris'teki Sorbonne Üniversitesi'nde (eski adıyla UPMC) computer science department'taki bir host arasında izleniyor. Çıktı altı sütundan oluşur: ilk sütun yukarıda tanımlanan marked değerdir; yani route boyunca router'ın sıra numarası; ikinci sütun router'ın adıdır; üçüncü sütun router'ın adresidir (xxx.xxx.xxx.xxx formunda); son üç sütun üç deney için round-trip delay'lerdir. Eğer source herhangi bir router'dan üçten az mesaj alırsa (network'te packet loss nedeniyle), Traceroute router numarasından hemen sonra bir yıldız işareti koyar ve o router için üçten az round-trip time raporlar.
+
+```
+1  gw-vlan-2451.cs.umass.edu (128.119.245.1) 1.899 ms 3.266 ms 3.280 ms
+2  j-cs-gw-int-10-240.cs.umass.edu (10.119.240.254) 1.296 ms 1.276 ms 1.245 ms
+3  n5-rt-1-1-xe-2-1-0.gw.umass.edu (128.119.3.33) 2.237 ms 2.217 ms 2.187 ms
+4  core1-rt-et-5-2-0.gw.umass.edu (128.119.0.9) 0.351 ms 0.392 ms 0.380 ms
+5  border1-rt-et-5-0-0.gw.umass.edu (192.80.83.102) 0.345 ms 0.345 ms 0.344 ms
+6  nox300gw1-umass-re.nox.org (192.5.89.101) 3.260 ms 0.416 ms 3.127 ms
+7  nox300gw1-umass-re.nox.org (192.5.89.101) 3.165 ms 7.326 ms 7.311 ms
+8  198.71.45.237 (198.71.45.237) 77.826 ms 77.246 ms 77.744 ms
+9  renater-lb1-gw.mxl.par.fr.geant.net (62.40.124.70) 79.357 ms 77.729 79.152 ms
+10 193.51.180.109 (193.51.180.109) 78.379 ms 79.936 ms 80.042 ms
+11 * 193.51.180.109 (193.51.180.109) 80.640 ms *
+12 * 195.221.127.182 (195.221.127.182) 78.408 ms *
+13 195.221.127.182 (195.221.127.182) 80.686 ms 78.796 ms 78.434 ms
+14 r-upmc1.reseau.jussieu.fr (134.157.254.10) 78.399 ms * 81.353 ms
+```
+
+Yukarıdaki trace'te, source ile destination arasında **14 router** vardır. Bu router'ların çoğunun bir adı vardır ve hepsinin adresi vardır. Örneğin, Router 4'ün adı **core1-rt-et-5-2-0.gw.umass.edu** ve adresi **128.119.0.9**'dur. Aynı router için verilen data'ya bakarsak, üç denemenin ilkinde source ile router arasındaki round-trip delay **0.351 msec**'dir. Sonraki iki deneme için round-trip delay'ler sırasıyla **0.392** ve **0.380 msec**'dir. Bu round-trip delay'ler, az önce tartışılan tüm delay'leri içerir: transmission delay'ler, propagation delay'ler, router processing delay'leri ve queuing delay'leri.
+
+Queuing delay zamanla değiştiği için, router $n$'ye gönderilen bir packet'in round-trip delay'i, router $n+1$'e gönderilen packet $n+1$'in round-trip delay'inden bazen daha uzun olabilir. Gerçekten, yukarıdaki örnekte bu olayı gözlemliyoruz: Router 12'ye olan delay, Router 11'e olan delay'den daha küçüktür! Ayrıca router 7'den router 8'e geçerken round-trip delay'deki büyük artışı da not edin. Bu, router 7 ile router 8 arasındaki **transatlantic(Okyanusu'nu aşan vs) fiber-optic link**'ten kaynaklanır; bu, nispeten büyük bir **propagation delay**'e yol açar.
+
+Traceroute için grafiksel arayüz sağlayan bir dizi ücretsiz yazılım programı vardır; favorilerimizden biri **PingPlotter**'dır. Sıklıkla kullanılan başka bir araç da **Whois**'dir; bu, dağıtılmış Whois database'ini sorgular ve IP adresleri hakkında registration bilgisi sağlar.
+
+## End System, Application, ve Other Delays
+
+Processing, transmission ve propagation delay'lerine ek olarak, end systems'te ek önemli delay'ler olabilir. 
+Örneğin, bir packet'i shared ortamda (örneğin WiFi veya cable modem senaryosunda) iletmek isteyen bir end system, ortam'ı diğer end systems'lerle paylaşma protokolünün bir parçası olarak transmission'ını **purposefully** (kasıtlı olarak) geciktirebilir; bu tür protokolleri daha sonra detaylıca inceleyeceğiz. Bir diğer önemli delay ise **medya paketleme delay**'dir; bu, Zoom ve Google Hangouts gibi video conferencing uygulamalarında mevcuttur. Video conferencing'te, gönderen taraf packet'i Internet'e iletmeden önce, önce encoded digitized video ve speech ile packet'i doldurmalıdır.
+
+> **TTL (Time To Live)** mekanizması: packet header'ında TTL field'i var. Her router TTL'i 1 azaltır. TTL=0 olunca router packet'i drop eder ve ICMP "Time Exceeded" mesajı gönderir. Traceroute TTL=1, 2, 3... diye artırarak gönderir, böylece her hop'taki router'dan ICMP cevabı alır. 3 deneme = 3 farklı RTT ölçümü, varyasyon gösterir (queuing delay değişken). Router 7→8'deki 77ms artış = transatlantic fiber. Işık hızı ile ~5500 km mesafe (Boston-Paris arası yaklaşık bu). Asterisk (*) = packet loss, 3'ten az cevap geldi. Sınavda "traceroute nasıl çalışır?" diye sorarlarsa, "TTL field'ini artırarak, her router'dan ICMP Time Exceeded alarak route'u map'ler". "RTT neden değişir?" → "Queuing delay değişken, network tıkanlığı değişken." Ayrıca media packetization delay: Zoom'da konuşurken küçük bir gecikme hissedersin, bu encoding + packetization + network delay. Video conferencing'te 150ms altı iyi, 400ms üstü kötü falan.
+
+
