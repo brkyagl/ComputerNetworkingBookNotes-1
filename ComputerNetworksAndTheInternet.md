@@ -1336,5 +1336,5 @@ Tüm server access link'lerinin aynı rate **$R_s$**'ye, tüm client access link
    
    R = 5 Mbps shared among 10 downloads
    Each download gets 500 kbps
-   Bottleneck = shared core link
+   Darboğaz = shared core link
 ```
