@@ -1129,3 +1129,4 @@ Bu, ışık hızına eşit veya biraz daha azdır. Propagation delay, iki router
 Yani propagation delay **d/s**'dir; burada **d** router A ile router B arasındaki mesafe ve **s** link'in propagation speed'idir. 
 Packet'in son bit'i node B'ye yayılır yayınlmaz, packet'in tüm önceki bit'leri router B'de store edilmiş olur. 
 Tüm süreç daha sonra router B'nin forwarding'i gerçekleştirmesiyle devam eder. Wide-area network'lerde propagation delay'ler **milisaniye** mertebesindedir.
+
