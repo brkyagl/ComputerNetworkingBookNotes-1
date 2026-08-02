@@ -1176,7 +1176,7 @@ Bu nedenle, traffic mühendisliğinin altın kurallarından biri şudur: *Sistem
 Şimdi $La/R \le 1$ durumunu düşünelim. Burada, gelen traffic'in doğası queuing delay'i etkiler. 
 Örneğin, eğer packet'ler periyodik olarak gelirse — yani her $L/R$ saniyede bir packet gelirse — o zaman her packet boş bir queue'a ulaşacak ve hiç queuing delay olmayacaktır. 
 Diğer yandan, eğer packet'ler patlamalar halinde gelirse ancak periyodik olarak, o zaman önemli bir ortalama queuing delay olabilir. 
-Örneğin, her $(L/R)N$ saniyede $N$ packet aynı anda geldiğini varsayalım. İlk iletilen packet'ın queuing delay'i yoktur; ikinci iletilen packet'ın queuing delay'i $L/R$ saniyedir; ve genel olarak, $n$'inci iletilen packet'ın queuing delay'i $(n-1)L/R$ saniyedir.
+Örneğin, her $(L/R)N$ saniyede $N$ packet aynı anda geldiğini varsayalım. İlk iletilen packet'ın queuing delay'i yoktur; ikinci iletilen packet'ın queuing delay'i $L/R$ saniyedir; ve genel olarak, $n$'inci iletilen packet'ın queuing delay'i $(n-1)L/R$ saniyedir. Bunu kendi başımıza bi' pratik gibi çalışmak lazım bu arada.
 
 Yukarıda tanımlanan periyodik varışların iki örneği biraz akademiktir. Tipik olarak, bir queue'a varış süreci **random**'dır; yani varışlar herhangi bir örnek takip etmez ve packet'ler rastgele miktarlarda zaman aralıklarıyla birbirinden ayrılır. 
 Bu daha gerçekçi durumda, $La/R$ niceliği queuing delay istatistiklerini tam olarak karakterize etmek için genellikle yeterli değildir. Yine de, queuing delay'in büyüklüğü hakkında ön bakış kazanmak için faydalıdır. 
