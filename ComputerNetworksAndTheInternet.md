@@ -1157,3 +1157,39 @@ Processing delay $d_{\text{proc}}$ genellikle ihmal edilebilir; ancak, bir route
 > **Transmission delay = gişede bekleme + servis süresi** (packet'i hattan çıkarma). **Propagation delay = yolda geçen süre** (bit'in fiziksel seyahati). İkisi tamamen bağımsız. Karavan analojisinde: 10 araba = L (packet length), 1 araba/12s = R (transmission rate). L/R = 10/(1/12) = 120s = 2dk. Propagation = 100km/100kph = 1 saat. 
 > $$d_{\text{nodal}} = d_{\text{proc}} + d_{\text{queue}} + d_{\text{trans}} + d_{\text{prop}}$$
 > Sınavlarda "transmission ve propagation farkı?" diye sorarlarsa: "Transmission packet'in boyutuna ve hıza bağlı, mesafeye değil. Propagation mesafeye ve ortam hızına bağlı, packet boyutuna değil." İkinci senaryoda (1000km/h, 1 araba/dk), kervan ilk gişede hâlâ servis edilirken arabalar ikinci gişeye ulaşıyor — bu **store-and-forward pipeline**'ı gösterir. Production'da bu, yüksek hızlı link'lerde (propagation küçük) ve büyük packet'lerde (transmission büyük) gerçekleşir. Ayrıca $d_{\text{proc}}$ ihmal edilebilir gibi görünse de, router'ın forwarding kapasitesini belirler — 1 Mpps (million packets per second) router'ın processing delay'i 1 µs'dir. Bu, datacenter switch'lerinde kritik.
+
+## 1.4.2 Queuing Delay and Packet Loss
+
+Nodal delay'in en karmaşık ve ilginç component'i **queuing delay**, $d_{\text{queue}}$'dur. Aslında, queuing delay computer networking'te o kadar önemli ve ilginçtir ki, binlerce makale ve sayısız kitap yazılmıştır [Bertsekas 1991; Kleinrock 1975; Kleinrock 1976]. Burada sadece queuing delay'in high-level, sezgisel bir tartışmasını veriyoruz; daha meraklı okuyucu bu kitaplardan bazılarını incelemek isteyebilir. 
+Diğer üç delay'den (yani $d_{\text{proc}}$, $d_{\text{trans}}$ ve $d_{\text{prop}}$) farklı olarak, queuing delay packet'ten packet'e değişebilir. 
+Örneğin, eğer 10 packet aynı anda boş bir queue'a ulaşırsa, ilk iletilen packet hiç queuing delay yaşamaz, ancak son iletilen packet diğer dokuz packet'in iletilmesini beklerken nispeten büyük bir queuing delay yaşar. 
+Bu nedenle, queuing delay'i karakterize ederken, tipik olarak ortalama queuing delay, queuing delay'in varyansı ve queuing delay'in belirli bir değeri aşma olasılığı gibi istatistiksel ölçümler kullanılır.
+
+Queuing delay ne zaman büyük ve ne zaman ihmal edilebilir? Bu sorunun cevabı, traffic'in queue'a ulaşma rate'ine, link'in transmission rate'ine ve gelen traffic'in doğasına — yani traffic'in periyodik mi yoksa patlamalar halinde mi geldiğine — bağlıdır. Burada biraz ön bakış kazanmak için, $a$'nın queue'a packet'lerin ortalama ulaşma rate'ini (saniyedeki packet sayısı cinsinden) gösterdiğini varsayalım. 
+Hatırlayın ki $R$ transmission rate'tir; yani bit'lerin queue'dan çıkarılma hızıdır (bits/sec cinsinden). Basitlik için, tüm packet'lerin $L$ bits'ten oluştuğunu varsayalım. 
+O zaman queue'a bit'lerin ortalama ulaşma rate'i $La$ bits/sec'dir. Son olarak, queue'un çok büyük olduğunu varsayalım, böylece esasen sonsuz sayıda bit tutabilir. 
+$La/R$ oranı, **traffic intensity(yoğunluğu)** olarak adlandırılır ve queuing delay'in büyüklüğünü tahmin etmekte önemli bir rol oynar. 
+Eğer $La/R > 1$ ise, o zaman queue'a ulaşan bit'lerin ortalama rate'i, queue'dan iletilebilecek bit'lerin rate'ini aşar. 
+Bu talihsiz durumda, queue sınırsız büyüyecek eğilimindedir ve queuing delay sonsuza yaklaşacaktır! 
+Bu nedenle, traffic mühendisliğinin altın kurallarından biri şudur: *Sisteminizi, trafik yoğunluğunun 1'den fazla olmayacağı şekilde tasarlayın.*
+
+Şimdi $La/R \le 1$ durumunu düşünelim. Burada, gelen traffic'in doğası queuing delay'i etkiler. 
+Örneğin, eğer packet'ler periyodik olarak gelirse — yani her $L/R$ saniyede bir packet gelirse — o zaman her packet boş bir queue'a ulaşacak ve hiç queuing delay olmayacaktır. 
+Diğer yandan, eğer packet'ler patlamalar halinde gelirse ancak periyodik olarak, o zaman önemli bir ortalama queuing delay olabilir. 
+Örneğin, her $(L/R)N$ saniyede $N$ packet aynı anda geldiğini varsayalım. İlk iletilen packet'ın queuing delay'i yoktur; ikinci iletilen packet'ın queuing delay'i $L/R$ saniyedir; ve genel olarak, $n$'inci iletilen packet'ın queuing delay'i $(n-1)L/R$ saniyedir.
+
+Yukarıda tanımlanan periyodik varışların iki örneği biraz akademiktir. Tipik olarak, bir queue'a varış süreci **random**'dır; yani varışlar herhangi bir örnek takip etmez ve packet'ler rastgele miktarlarda zaman aralıklarıyla birbirinden ayrılır. 
+Bu daha gerçekçi durumda, $La/R$ niceliği queuing delay istatistiklerini tam olarak karakterize etmek için genellikle yeterli değildir. Yine de, queuing delay'in büyüklüğü hakkında ön bakış kazanmak için faydalıdır. 
+Özellikle, eğer traffic yoğunluğu sıfıra yakınsa, o zaman packet varışları seyrektir ve bir gelen packet'in queue'da başka bir packet bulması olası değildir. Dolayısıyla, ortalama queuing delay sıfıra yakın olacaktır. 
+Diğer yandan, traffic yoğunluğunun 1'e yaklaştığında, varış rate'inin transmission capacity'yi aştığı zaman aralıkları olacaktır (packet varış rate'indeki varyasyonlar nedeniyle) ve bu zaman aralıkları boyunca bir queue oluşacaktır; varış rate'i transmission capacity'den az olduğunda queue uzunluğu küçülecektir. Yine de, traffic yoğunluğu 1'e yaklaştıkça, ortalama queue uzunluğu giderek büyür. 
+
+Traffic yoğunluğu 1'e yaklaştıkça ortalama queuing delay'in hızla arttığıdır. Yoğunluktaki küçük bir yüzdelik artış, delay'de çok daha büyük bir yüzdelik artışa neden olur. 
+Belki bu olayı otoyolda da yaşamışsınızdır. Eğer tipik olarak yoğun olan bir yolda düzenli olarak araba kullanıyorsanız, yolun tipik olarak yoğun olması traffic yoğunluğunun 1'e yakın olduğu anlamına gelir. 
+Eğer bir olay normalden biraz daha fazla traffic'e neden olursa, yaşadığınız delay'ler muazzam olabilir.
+
+https://computerscience.unicam.it/marcantoni/reti/applet/QueuingAndLossInteractive/1.html; bu site bir queue için interaktif bir animasyon sunar. Eğer packet varış rate'ini traffic yoğunluğunu aşacak kadar yüksek ayarlarsanız, queue'un zaman içinde yavaşça büyüdüğünü göreceksiniz.
+
+> İşte traffic engineering'in en kritik formülü 
+> $$\text{Traffic Intensity} = \frac{La}{R}$$
+> $L$ = packet length (bits), $a$ = arrival rate (packets/sec), $R$ = transmission rate (bits/sec). Bu formülü aklına yazmak lazım. $La/R > 1$ = queue sonsuz büyür, delay → ∞. $La/R \le 1$ = stable ama patlamalı traffic varsa yine queue oluşur. Sınavda "router queue neden doluyor?" diye sorarlarsa, "varış rate'i hizmet rate'ni aşıyor, traffic yoğunluğu > 1". Ayrıca "yoğunluk 1'e yaklaştıkça delay üstel artar" — bu queueing theory'den M/M/1 modeli. Production'da monitoring yaparken, link kullanım oranı %80'i geçince queuing delay patlar. Bu yüzden network design'da "boşluk yüksekliği" bırakılır, %70-75 max. [Bertsekas 1991] = Data Networks kitabı, queueing theory klasik. [Kleinrock 1975, 1976] = queueing theory'in babası.
+
