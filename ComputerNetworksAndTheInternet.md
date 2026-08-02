@@ -1261,4 +1261,80 @@ Processing, transmission ve propagation delay'lerine ek olarak, end systems'te e
 
 > **TTL (Time To Live)** mekanizması: packet header'ında TTL field'i var. Her router TTL'i 1 azaltır. TTL=0 olunca router packet'i drop eder ve ICMP "Time Exceeded" mesajı gönderir. Traceroute TTL=1, 2, 3... diye artırarak gönderir, böylece her hop'taki router'dan ICMP cevabı alır. 3 deneme = 3 farklı RTT ölçümü, varyasyon gösterir (queuing delay değişken). Router 7→8'deki 77ms artış = transatlantic fiber. Işık hızı ile ~5500 km mesafe (Boston-Paris arası yaklaşık bu). Asterisk (*) = packet loss, 3'ten az cevap geldi. Sınavda "traceroute nasıl çalışır?" diye sorarlarsa, "TTL field'ini artırarak, her router'dan ICMP Time Exceeded alarak route'u map'ler". "RTT neden değişir?" → "Queuing delay değişken, network tıkanlığı değişken." Ayrıca media packetization delay: Zoom'da konuşurken küçük bir gecikme hissedersin, bu encoding + packetization + network delay. Video conferencing'te 150ms altı iyi, 400ms üstü kötü falan.
 
+## 1.4.4 Throughput in Computer Networks
 
+Delay ve packet loss'a ek olarak, computer networks'te bir diğer kritik performans göstergesi **end-to-end throughput**'tur. 
+Throughput'u tanımlamak için, bir computer network'te Host A'dan Host B'ye büyük bir file transferini düşünelim. 
+Bu transfer, örneğin bir computer'dan diğerine büyük bir video clip olabilir. Herhangi bir anda **anlık throughput**, Host B'nin file'ı aldığı rate'tir (bits/sec cinsinden). (Birçok uygulama, download sırasında kullanıcı arayüzünde anlık throughput'u gösterir — belki bunu daha önce gözlemlemişsinizdir. Internet'teki server'larınız ve server'lar arasındaki end-to-end delay'i ve download throughput'u ölçmek için **speedtest** uygulamasını denemek isteyebilirsiniz [Speedtest 2025].) 
+Eğer file **F bits**'ten oluşuyorsa ve transfer **T saniye** sürüyorsa, o zaman file transfer'inin **ortalama throughput**'u **F/T bits/sec**'dir. 
+İnternet telefon gibi bazı uygulamalarda, düşük gecikme süresi ve belirli bir eşiği sürekli olarak aşan anlık veri aktarım hızına sahip olmak arzu edilir (örneğin, bazı İnternet telefon uygulamaları için 24 kbps’nin üzerinde ve bazı gerçek zamanlı video uygulamaları için 256 kbps’nin üzerinde). Diğer uygulamalar için, file transfer'lerini içerenler de dahil, delay kritik değildir, ancak mümkün olan en yüksek throughput'a sahip olmak arzu edilir.
+
+Throughput'un önemli konseptine daha fazla ön bakış kazanmak için, birkaç örneği düşünelim. **Şema(a)** iki end system'i, bir server ve bir client'i gösteriyor; bunlar iki communication link ve bir router ile bağlıdır. Server'dan client'a bir file transfer'inin throughput'unu düşünelim. Server ile router arasındaki link'in rate'ini **$R_s$** ile, router ile client arasındaki link'in rate'ini **$R_c$** ile gösterelim. 
+Tüm network'te gönderilen tek bit'lerin server'dan client'a olduğunu varsayalım. Şimdi soruyoruz, bu ideal senaryoda server-to-client throughput nedir? 
+Bu soruyu yanıtlamak için, bit'leri **fluid** (sıvı) ve communication link'leri **pipes** (borular) olarak düşünebiliriz. 
+Açıkça, server $R_s$'den daha hızlı bir rate'te link'i üzerinden bit pump edemez; ve router $R_c$'den daha hızlı bir rate'te bit forward edemez. 
+Eğer **$R_s < R_c$** ise, o zaman server tarafından pump edilen bit'ler router'dan "akarak" geçer ve client'a **$R_s$** bps hızında ulaşır; throughput **$R_s$** bps olur. 
+Diğer yandan, eğer **$R_c < R_s$** ise, o zaman router aldığı kadar hızlı bit forward edemez. Bu durumda, bit'ler router'dan sadece **$R_c$** hızında ayrılır; end-to-end throughput **$R_c$** olur. 
+(Not edin ki, eğer bit'ler router'a $R_s$ hızında ulaşmaya devam eder ve router'dan $R_c$ hızında ayrılırsa, client'a iletilmek için bekleyen bit'lerin backlog'u büyüyecek ve büyüyecek — en istenmeyen durum!) 
+Böylece, bu basit iki-link network'ü için throughput **$\min\{R_s, R_c\}$**'dir; yani **darboğaz link**'in transmission rate'idir. 
+Throughput'u belirledikten sonra, server'dan client'a büyük bir file'ın transfer süresini şu şekilde yaklaşık olarak hesaplayabiliriz: **$F / \min\{R_s, R_c\}$**. 
+Spesifik bir örnek için, 32 milyon bits'lik bir MP3 file'ı indirdiğinizi varsayalım; server'ın transmission rate'i **$R_s = 2$ Mbps** ve access link'iniz **$R_c = 1$ Mbps**. File'ı transfer etmek için gereken süre **32 saniyedir**. Elbette, throughput ve transfer süresi için bu ifadeler sadece yaklaşıklıklardır; store-and-forward ve processing delay'leri ile protocol hata'larını hesaba katmazlar.
+
+**Şema(b)** şimdi server ile client arasında **N** link olan bir network'ü gösteriyor; link'lerin transmission rate'leri **$R_1, R_2, \ldots, R_N$**'dir. İki-link network'ü için aynı analizi uygulayarak, server'dan client'a bir file transfer'inin throughput'unun **$\min\{R_1, R_2, \ldots, R_N\}$** olduğunu buluruz; bu bir kez daha server ile client arasındaki path boyunca **darboğaz link**'in transmission rate'idir.
+
+Şimdi günümüz Internet'inden motive edilmiş başka bir örneği düşünelim. **Şema(a-2)** bir server ve bir client'i gösteriyor; bunlar bir computer network'e bağlıdır. 
+Server'dan client'a bir file transfer'inin throughput'unu düşünelim. Server **$R_s$** rate'li bir access link ile network'e bağlıdır ve client **$R_c$** rate'li bir access link ile network'e bağlıdır. 
+Şimdi communication network'ün core'undaki tüm link'lerin **$R_s$ ve $R_c$'den çok daha yüksek** transmission rate'lere sahip olduğunu varsayalım. 
+Gerçekten, günümüzde Internet'in core'u, çok az tıkanıklık yaşayan high-speed link'lerle **aşırı tahsis edilmiş**'tir. 
+Ayrıca tüm network'te gönderilen tek bit'lerin server'dan client'a olduğunu varsayalım. Bu örnekte computer network'ün core'u geniş bir boru gibidir; source'dan destination'a bit'lerin akabileceği rate, yine **$R_s$ ve $R_c$'nin minimumu**dur; yani **throughput = $\min\{R_s, R_c\}$**. Bu nedenle, günümüz Internet'inde throughput için kısıtlayıcı faktör tipik olarak **access network**'tür.
+
+Son bir örnek için, **Şema(b-2)**'yi düşünelim; burada computer network'ün core'una **10 server** ve **10 client** bağlıdır. 
+Bu örnekte, 10 eşzamanlı download gerçekleşiyor; 10 client-server pair'ini içeriyor. Bu 10 download'ın şu anda network'teki tek traffic olduğunu varsayalım. 
+Şema'da gösterildiği gibi, tüm 10 download tarafından geçilen core'da bir link vardır. Bu link'in transmission rate'ini **R** ile gösterelim. 
+Tüm server access link'lerinin aynı rate **$R_s$**'ye, tüm client access link'lerinin aynı rate **$R_c$**'ye sahip olduğunu ve core'daki tüm link'lerin — ortak link hariç — transmission rate'lerinin **$R_s$ ve $R_c$'den çok daha büyük** olduğunu varsayalım. Şimdi soruyoruz, download'ların throughput'ları nedir? Açıkça, eğer ortak link'in rate'i **R** büyükse — diyelim ki **$R_s$ ve $R_c$'nin her ikisinden de yüz kat daha büyük** — o zaman her bir download'ın throughput'u yine **$\min\{R_s, R_c\}$** olur. Ama ya ortak link'in rate'i **$R_s$ ve $R_c$ ile aynı mertebedeyse**? Bu durumda throughput ne olur? Varsayalım **$R_s = 2$ Mbps**, **$R_c = 1$ Mbps**, **R = 5 Mbps** ve ortak link transmission rate'ini 10 download arasında eşit olarak bölüyor. O zaman her bir download için darboğaz artık access network'te değil, core'daki **shared link**'tir; bu her bir download'a sadece **500 kbps** throughput sağlar. Böylece, her bir download için end-to-end throughput şimdi **500 kbps**'e düşmüştür.
+
+**a, a-2**'daki örnekler, data'nın aktığı link'lerin transmission rate'lerine bağlı olduğunu gösteriyor. Data flows üzerinde başka arada geçen traffic yoksa, throughput'un basitçe source ile destination arasındaki path boyunca minimum transmission rate olarak yaklaşıklandığını gördük. **b-2**'deki örnek, daha genel olarak throughput'un sadece path boyunca link'lerin transmission rate'lerine değil, aynı zamanda arada geçen traffic'e de bağlı olduğunu gösteriyor. Özellikle, yüksek transmission rate'e sahip bir link, eğer o link üzerinden birçok başka data flow da geçiyorsa, bir file transfer'inin darboğaz link'i olabilir.
+
+## Şema A ve B — Throughput for a File Transfer from Server to Client
+
+```
+(a) Two-link network:
+   [Server]──Rs──►[Router]──Rc──►[Client]
+      🖥️                              💻
+   
+   Throughput = min{Rs, Rc}
+   Darboğaz = the slower link
+
+(b) N-link network:
+   [Server]──R1──►[◯]──R2──►[◯]──...──RN──►[Client]
+   
+   Throughput = min{R1, R2, ..., RN}
+   Darboğaz = yol üzerindeki en yavaş link
+```
+
+## Şema A2 ve B2 — End-to-End Throughput
+
+```
+(a) Single client-server pair:
+   [Server]──Rs──►[Network Core]──Rc──►[Client]
+   
+   Core links >> Rs, Rc (over-provisioned)
+   Throughput = min{Rs, Rc}
+   Darboğaz = access network
+
+(b) 10 servers, 10 clients:
+   [S1]──Rs    [S2]──Rs         [S10]──Rs
+      │          │                  │
+      └──────────┼──────────────────┘
+                 ▼
+            [Bottleneck link]
+            capacity R = 5 Mbps
+                 │
+      ┌──────────┼──────────────────┐
+      ▼          ▼                  ▼
+   [C1]──Rc   [C2]──Rc         [C10]──Rc
+   
+   R = 5 Mbps shared among 10 downloads
+   Each download gets 500 kbps
+   Bottleneck = shared core link
+```
