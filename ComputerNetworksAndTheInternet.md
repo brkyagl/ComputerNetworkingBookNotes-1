@@ -1515,3 +1515,76 @@ Link layer'ın görevi, bir network element'ten komşu bir network element'e **t
 Bu katmandaki protocol'ler yine link'e bağlıdır ve link'in actual transmission ortamına (örneğin twisted-pair copper wire, single-mode fiber optics) daha da bağlıdır. 
 Örneğin, Ethernet'in birçok physical-layer protocol'ü vardır: biri twisted-pair copper wire için, biri coaxial cable için, biri fiber için ve böyle devam eder. Her durumda, bir bit link üzerinden farklı bir şekilde taşınır.
 
+## 1.5.2 Encapsulation
+
+Şema, data'nın sending end system'in protocol stack'inden aşağıya, arada geçen link-layer switch ve router'ların protocol stack'lerinden yukarı ve aşağıya, ve sonra receiving end system'deki protocol stack'inden yukarı doğru aldığı fiziksel path'i gösteriyor. Router'lar ve link-layer switch'ler her ikisi de packet switches'tir. End systems'lere benzer şekilde, router'lar ve link-layer switch'ler networking hardware ve software'larını katmanlara organize ederler. 
+Ama router'lar ve link-layer switch'ler protocol stack'indeki **tüm** katmanları implemente etmezler; tipik olarak sadece alt katmanları implemente ederler. 
+Şemada gösterildiği gibi, link-layer switch'ler katman 1 ve 2'yi implemente eder; router'lar katman 1'den 3'e kadar implemente eder. 
+Bu, örneğin, Internet router'larının IP protocol'ünü (bir layer 3 protocol'ü) implemente edebileceği anlamına gelir; oysa link-layer switch'ler bunu yapamaz. 
+Daha sonra göreceğiz ki, link-layer switch'ler IP adreslerini tanımazlar, layer 2 adreslerini — örneğin Ethernet adreslerini — tanıyabilirler. 
+Host'ların tüm beş katmanı implemente ettiğini not edin; bu, Internet architecture'ının çoğu karmaşıklığını network'ün **edge**'lerine koyduğu görüşüyle tutarlıdır.
+
+Şema ayrıca **encapsulation**'ın önemli konseptini de gösterir. Sending host'ta, bir **application-layer message** (**M**) transport layer'a iletilir. 
+En basit durumda, transport layer message'ı alır ve receiver-side transport layer tarafından kullanılacak ek bilgiler (yani **H_t** olarak adlandırılan transport-layer header information) ekler.
+
+Application-layer message ve transport-layer header information birlikte **transport-layer segment**'i oluşturur. Transport-layer segment böylece application-layer message'ı encapsulate eder. 
+Eklenen bilgi, receiver-side transport layer'ın message'ı uygun application'a iletmesine izin veren bilgiyi ve receiver'ın route boyunca message'daki bit'lerin değişip değişmediğini belirlemesine izin veren error-detection bit'lerini içerebilir. Transport layer daha sonra segment'i network layer'a iletir; network layer source ve destination end system adresleri gibi network-layer header information (**H_n**) ekleyerek bir **network-layer datagram** oluşturur. 
+Datagram daha sonra link layer'a iletilir; link layer (elbette!) kendi link-layer header information'ını ekleyerek bir **link-layer frame** oluşturur. 
+Böylece, her katmanda bir packet'in iki tip field'i olduğunu görüyoruz: **header fields** ve bir **payload field**. Payload tipik olarak üst katmandan gelen bir packet'tir.
+
+Bu konuda yapılabilecek yararlı bir benzetme, bir şirket şubesinden diğerine kamu posta hizmeti aracılığıyla bir şube içi not göndermektir. 
+Diyelim ki Alice, bir branch office'de, başka bir branch office'de olan Bob'a not göndermek istiyor. **Not**, **application-layer message**'a benzer. Alice not'u Bob'un adı ve departmanı önünde yazılı olan bir şirket içi zarf’a koyar. 
+**şirket içi zarf**, **transport-layer segment**'e benzer — header information (Bob'un adı ve departman numarası) içerir ve application-layer message'ı (not'u) encapsulate eder. 
+Göndericinin şubesindeki posta odası, kurum içi bir zarf aldığında, bunu kamu posta hizmeti aracılığıyla postalanmaya uygun başka bir zarfın içine koyar.
+Posta odası ayrıca posta zarfının üzerine gönderen ve alıcı şubelerin posta adreslerini de yazmaktadır. Burada, **posta zarfı**, **datagram**'a benzer — transport-layer segment'i (şirket içi zarf'ı) encapsulate eder, ki bu da orijinal message'ı (not'u) encapsulate eder. Posta servisi, posta zarfını şubenin posta odasına teslim eder. Orada **de-encapsulation** süreci başlar. Posta odası, kurum içi notu alır ve Bob’a iletir. Sonunda Bob zarfı açar ve notu çıkarır.
+
+Encapsulation süreci yukarıda tarif edilenden daha karmaşık olabilir. Örneğin, büyük bir message multiple transport-layer segment'lere bölünebilir (ki bunlar kendileri multiple network-layer datagram'lara bölünebilir). 
+Alıcı tarafta, bu tür bir segment daha sonra onu oluşturan datagramlardan yeniden oluşturulmalıdır.
+
+## Hosts, Routers, and Link-Layer Switches
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  SOURCE HOST                    LINK-LAYER SWITCH         ROUTER            │
+│  ───────────                    ─────────────────         ──────            │
+│                                                                             │
+│  ┌──────────┐                   ┌──────────┐              ┌──────────┐      │
+│  │  App     │ M                 │          │              │          │      │
+│  ├──────────┤                   │  Link    │ Hl Hn Ht M   │  Network │ Hn Ht M 
+│  │ Transport│ Ht M              │  Physical│ ─────────►   │  Link    │ Hl Hn Ht M 
+│  ├──────────┤                   └──────────┘              │  Physical│ ───────► 
+│  │ Network  │ Hn Ht M                                     └──────────┘      │
+│  ├──────────┤                        │                        │             │
+│  │ Link     │ Hl Hn Ht M             │                        │             │
+│  ├──────────┤                        │                        │             │
+│  │ Physical │  ──────────────────────┘────────────────────────┘             │
+│  └──────────┘                                                               │
+│                                                                             │
+│  DESTINATION HOST                                                           │
+│  ───────────────                                                            │
+│                                                                             │
+│  ┌──────────┐                                                               │
+│  │  App     │ M                 (De-encapsulation: headers stripped off)    │
+│  ├──────────┤                                                               │
+│  │ Transport│ Ht M                                                          │
+│  ├──────────┤                                                               │
+│  │ Network  │ Hn Ht M                                                       │
+│  ├──────────┤                                                               │
+│  │ Link     │ Hl Hn Ht M                                                    │
+│  ├──────────┤                                                               │
+│  │ Physical │ ◄──────────────────────────────────────────────────────────── │
+│  └──────────┘                                                               │
+│                                                                             │
+│  M  = Message (Application layer)                                           │
+│  Ht = Transport header (added by Transport layer)                           │
+│  Hn = Network header (added by Network layer, includes IP addresses)        │
+│  Hl = Link header (added by Link layer, includes MAC addresses)             │
+│                                                                             │
+│  Hosts:       Layers 1-5 (all layers)                                       │
+│  Routers:     Layers 1-3 (Physical, Link, Network)                          │
+│  Link switches: Layers 1-2 (Physical, Link)                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+Her katman üstünden geleni alır, kendi header'ını ekler, altına iletir. Bu "soğan" mantığı gibi — kat kat sarılma. Source'ta: M → Ht+M → Hn+Ht+M → Hl+Hn+Ht+M. Router'da: Hl çıkarılır (link layer), Hn okunur (network layer, routing), yeni Hl eklenir (farklı link için). Link switch'te: sadece Hl okunur, MAC'e bakar, forward eder — IP'yi görmez! Destination'da: Hl çıkar → Hn çıkar → Ht çıkar → M ulaşır. 
