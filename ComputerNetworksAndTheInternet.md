@@ -1338,3 +1338,180 @@ Tüm server access link'lerinin aynı rate **$R_s$**'ye, tüm client access link
    Each download gets 500 kbps
    Darboğaz = shared core link
 ```
+
+---
+
+# 1.5 Protocol Layers ve Hizmet Modelleri
+
+Şu ana kadarki tartışmalarımızdan, Internet'in son derece karmaşık bir sistem olduğu açık. 
+Internet'in birçok parçası olduğunu gördük: sayısız application ve protocol, çeşitli end system tipleri, packet switches ve çeşitli link-level ortam tipleri. 
+Bu muazzam karmaşıklık göz önüne alındığında, bir network mimarisi organize etmek için herhangi bir umut var mı, veya en azından network mimarisisi tartışmamızı organize etmek? Neyse ki, her iki sorunun cevabı da evet.
+
+## 1.5.1 Layered Architecture
+
+Internet mimarisini organize etmeye çalışmadan önce, düşüncelerimizi bir insan benzetmesiyle açıklayalım. 
+Aslında, günlük hayatımızda sürekli karmaşık sistemlerle uğraşıyoruz. Diyelim ki birisi size, örneğin, **airline system**'i (havayolu sistemi) tanımlamanızı istedi. 
+Ticketing agent'ları, baggage checker'ları, gate personeli, pilotları, uçakları, hava trafik kontrolünü ve uçakları yönlendiren dünya çapındaki sistemi içeren bu karmaşık sistemi tanımlamak için yapıyı nasıl bulurdunuz? 
+Bu sistemi tanımlamanın bir yolu, bir havayoluyla uçarken attığınız (veya sizin için atılan) adımlar serisini tanımlamak olabilir. 
+Biletinizi satın alırsınız, bagajlarınızı kontrol edersiniz, gate'e gidersiniz ve sonunda uçağa binersiniz. Uçak kalkar ve destination'ına yönlendirilir. 
+Uçak indikten sonra, gate'de uçaktan inersiniz ve bagajlarınızı alırsınız. Yolculuk kötü geçtiyse, ticket agent'a şikayet edersiniz (çabanın karşılığında hiçbir şey alamasanız bile :D). 
+
+## Uçakla Seyahat Etmek: Yapılması Gerekenler
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│   Kalkış Tarafı                      Varış Tarafı                           │
+│   ───────────────                   ─────────────                           │
+│                                                                             │
+│   Ticket (satın alma)  ═══════════════════════►  Ticket (şikayet etmek)     │
+│        │                                                                    │
+│        ▼                                                                    │
+│   Baggage (check)    ═══════════════════════►  Baggage (claim)              │
+│        │                                                                    │
+│        ▼                                                                    │
+│   Gates (load)       ═══════════════════════►  Gates (unload)               │
+│        │                                                                    │
+│        ▼                                                                    │
+│   Pistten kalkış    ═══════════════════════►  Pistten iniş                  │ 
+│        │                                                                    │
+│        ▼                                                                    │
+│   ┌─────────────────────────────────────────────────────┐                   │
+│   │              Airplane routing                       │                   │
+│   │         (Kalkış → Aktarma → Varış)                  │                   │
+│   └─────────────────────────────────────────────────────┘                   │
+│                                                                             │
+│   Biz: source host → destination host (packet gibi)                         │
+│   Her adım = havayolu sistemindeki bir katman                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+Şimdiden computer networking ile bazı analojiler görebiliyoruz: Havayolu tarafından source'dan destination'a "**ship**(transfer)" ediliyorsunuz; Internet'te bir packet source host'tan destination host'a "ship" edilir. 
+Ama bu aradığımız analoji tam olarak değil. Yukarıdaki şemada bir **structure** arıyoruz, her uçta bir ticketing function'ı olduğunu not ediyoruz; ayrıca biletli yolcular için bir baggage function'ı ve biletli ve bagajı kontrol edilmiş yolcular için bir gate function'ı var. Gate'i geçmiş yolcular için (yani biletli, bagajı kontrol edilmiş ve gate'den geçmiş yolcular) bir kalkış ve iniş function'ı var ve uçuş sırasında bir airplane-routing function'ı var. 
+Bu, şemadaki functionality'ye **yatay** bir şekilde bakabileceğimizi, aşağıdaki şemada gösterildiği gibi, düşündürüyor.
+
+Alttaki şema, airline functionality'yi katmanlara bölmüştür; bu, airline travel'ı tartışabileceğimiz bir framework sağlar. 
+Not edin ki her katman, altındaki katmanlarla birleşerek bazı functionality'leri, bazı **service**'leri implemente eder. 
+Ticketing katmanı ve altında, bir yolcu, bir havayolu şirketinin kontuarından diğerine yönlendirilir. 
+Baggage katmanı ve altında, bilet sahibi bir yolcu ve bagajı, bagaj teslim noktasından bagaj teslim alma alanına aktarılır. Baggage katmanının bu service'i sadece biletli bir kişiye sağladığına dikkat edin. 
+Gate katmanında, kalkış kapısından varış kapısına yapılan transfer, bir kişi ve bagajı için gerçekleştirilir. 
+Kalkış/iniş aşamasında, yolcular ve bagajlar için pistten piste aktarma işlemi gerçekleştirilir. 
+
+Her katman service'ini sağlar: **(1)** o katman içinde belirli aksiyonlar gerçekleştirerek (örneğin gate katmanında, uçağa insan yükleme ve boşaltma) ve **(2)** kendisinin hemen altındaki katmanın service'lerini kullanarak (örneğin gate katmanı, kalkış/iniş katmanındaki “pistten piste yolcu transfer hizmeti”ni kullanarak).
+
+## Havayolu İşlevselliğinin Yatay Katmanlandırılması
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  Kat           Kalkış Havaalanı    Ara Durağı      Varış Havaalanı          │
+│                  ─────────────────    ──────────────    ─────────────────   │
+│                                                                             │
+│  Bilet          Bilet (satın alma) ────────────────► Bilet (şikayet)        │
+│  ──────                                                                     │
+│  Bagaj         Bagaj (teslim)  ────────────────► Bagaj (teslim alma)        │
+│  ────────                                                                   │
+│  Kapı            Kapılar (yükleme)     ────────────────► Kapılar (boşaltma) │
+│  ─────                                                                      │
+│  Kalkış/        Pistten kalkış   ────────────────► Pistten iniş             │
+│  İniş                                                                       │
+│  ─────────                                                                  │
+│  Uçak        ┌─────────────────────────────────────────────────────┐        │
+│  Rota Belirleme  Uçak rotası belirleme (hava trafik kontrolü aracılığıyla)  │
+│  ─────────   └─────────────────────────────────────────────────────┘        |
+│                                                                             │
+│  Her katman, kendisinden bir altta bulunan katmanın hizmetini kullanır      │
+│  Her katman, kendisinden bir üstteki katmana hizmet sunar                   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+Bir **layered architecture** (katmanlı mimari), büyük ve karmaşık bir sistemin iyi tanımlanmış, spesifik bir parçasını tartışmamıza olanak tanır. 
+Bu basitleştirme, **modülerlik** sağlayarak kendisi önemli bir değere sahiptir; bir layer'ın implementasyonunu değiştirmeyi çok daha kolaylaştırır. 
+Bir layer, üstündeki katmana aynı service'i sağladığı ve altındaki katmandan aynı service'leri kullandığı sürece, bir layer'ın implementasyonu değiştirildiğinde sistemin geri kalanı değişmez. (Bir service'in implementasyonunu değiştirmenin, service'in kendisini değiştirmekten çok farklı olduğunu not edin.) Örneğin, eğer gate function'ları değiştirilseydi (örneğin, insanlar boyuna göre yolcu alınıyor ve iniyor olsaydı), airline system'inin geri kalanı değişmezdi çünkü gate katmanı hâlâ aynı function'ı sağlar (insan yükleme ve boşaltma); sadece bu function'ı değişiklikten sonra farklı bir şekilde implemente eder. 
+Sürekli güncellenen büyük ve karmaşık sistemler için, bir service'in implementasyonunu sistemin diğer bileşenlerini etkilemeden değiştirme yeteneği, layering'in bir diğer önemli avantajıdır.
+
+## Protocol Layering
+
+Ama havayolları hakkında yeterince konuştuk. Şimdi dikkatimizi network protocol'lerine çevirelim. Network protocol'lerinin design'ına structure sağlamak için, network designer'lar protocol'leri — ve onları implemente eden network hardware ve software'ı — **katmanlar** halinde organize eder. Her protocol katmanlardan birine aittir; tıpkı airline architecture'daki her function'ın bir katmana ait olması gibi. 
+Bir katmanın üstündeki katmana sunduğu **service**'lerle — yani bir katmanın **service model**'iyle — yine ilgileniyoruz. 
+Tıpkı airline örneğimizdeki gibi, her katman service'ini: **(1)** o katman içinde belirli aksiyonlar gerçekleştirerek ve **(2)** kendisinin hemen altındaki katmanın service'lerini kullanarak sağlar. 
+Örneğin, katman $n$ tarafından sağlanan service'ler, network'ün bir ucundan diğerine mesajların güvenilir teslimatlar'ını içerebilir. 
+Bu, katman $n-1$'in unreliable edge-to-edge message delivery service'ini kullanarak ve kayıp mesajları detect etmek ve retransmit etmek için katman $n$ functionality'sini ekleyerek implemente edilebilir.
+
+Bir protocol katmanı software'da, hardware'da veya ikisinin bir kombinasyonunda implemente edilebilir. **Application-layer protocol**'ler — örneğin HTTP ve SMTP — neredeyse her zaman end systems'te software olarak implemente edilir; transport-layer protocol'leri de öyle. Çünkü physical layer ve data link layer'lar spesifik bir link üzerinde iletişim işlerini yürütmekten sorumludurlar, tipik olarak verilen bir link ile ilişkili bir **network interface card**'de (örneğin Ethernet veya WiFi interface cards) implemente edilirler. Network layer genellikle hardware ve software'ın mixed bir implementasyonudur. 
+Ayrıca not edin ki, layered airline architecture'daki function'ların sistemi oluşturan çeşitli havalimanları ve uçuş kontrol merkezleri arasında dağıtılmış olması gibi, bir katman $n$ protocol'ü de network'ü oluşturan end systems, packet switches ve diğer component'ler arasında **distributed**'dir. Yani, bu network component'lerinin her birinde genellikle bir katman $n$ protocol'ünün bir parçası vardır.
+
+## The Internet Protocol Stack
+
+```
+┌─────────────────────────────────────────────┐
+│  ┌─────────────┐                            │
+│  │ Application │  ← HTTP, SMTP, DNS, FTP    │
+│  ├─────────────┤                            │
+│  │  Transport  │  ← TCP, UDP                │
+│  ├─────────────┤                            │
+│  │   Network   │  ← IP, ICMP, Routing       │
+│  ├─────────────┤                            │
+│  │    Link     │  ← Ethernet, WiFi, PPP     │
+│  ├─────────────┤                            │
+│  │   Physical  │  ← Copper, Fiber, Radio    │
+│  └─────────────┘                            │
+└─────────────────────────────────────────────┘
+```
+
+Protocol layering'in kavramsal ve yapısal avantajları vardır [RFC 3439]. Gördüğümüz gibi, layering system component'lerini tartışmak için structured bir yol sağlar. 
+Modularity, system component'lerini güncellemeyi kolaylaştırır. Ancak, bazı researcher'lar ve networking engineer'lar layering'e şiddetle karşı çıkar [Wakeman 1992]. 
+Layering'in bir potansiyel dezavantajı, bir katmanın alt katmanın işlevselliğini kopyalayabilmesidir. Örneğin, birçok protocol stack hem per-link bazında hem de end-to-end bazında error recovery sağlar. 
+İkinci bir olası dezavantaj ise, bir katmandaki işlevselliğin başka bir katmanda bulunan bilgilere (örneğin bir zaman damgası değerine) ihtiyaç duyması olabilir; bu durum, katmanları ayırma hedefine aykırıdır.
+
+Bir araya getirildiğinde, çeşitli katmanların protocol'lerine **protocol stack** denir. Internet protocol stack beş katmandan oluşur: **physical, link, network, transport ve application layers**. 
+
+## Application Layer
+
+Application layer, network applications'ların ve onların application-layer protocol'lerinin bulunduğu yerdir. 
+Internet'in application layer'ı birçok protocol içerir; örneğin **HTTP protocol** (Web document request ve transfer'ini sağlar) ve **SMTP** (e-mail transfer'ini sağlar). 
+Belirli network function'larının, örneğin www.ietf.org gibi human-friendly isimlerin Internet end systems için 32-bit network address'lere çevrilmesinin, de özel bir application-layer protocol'ün yardımıyla yapıldığını göreceğiz; yani **domain name system (DNS)**. 
+
+Bir application-layer protocol, multiple end systems arasında distributed'dir; bir end system'deki application, başka bir end system'deki application ile bilgi packet'leri exchange etmek için protocol'ü kullanır. 
+Application layer'daki bu bilgi packet'ine **message** diyeceğiz.
+
+## Transport Layer
+
+Internet'in transport layer'ı, application-layer messages'ları **application endpoints** arasında taşır. 
+Internet'te iki transport protocol'ü vardır: **TCP** ve **UDP**; her ikisi de application-layer messages'ları taşıyabilir. 
+TCP, application'larına **connection-oriented service** sağlar. Bu service, application-layer messages'ların destination'a **garantili delivery**'sini ve **flow control**'ü (yani sender/receiver speed matching'ini) içerir. 
+TCP ayrıca uzun messages'ları daha kısa **segment**'lere böler ve bir **congestion-control mechanism** sağlar; böylece source, network tıkanık olduğunda transmission rate'ini throttle eder (kısar). 
+**UDP protocol** ise application'larına **connectionless service** sağlar. Bu, **no reliability** (güvenilirlik yok), **no flow control** ve **no congestion control** sağlayan no-frills (sade, lüksüz) bir service'tir. Bu arada kitapta, transport-layer packet'ine **segment** deniliyor full.
+
+## Network Layer
+
+Internet'in **network layer**'ı, **datagrams** olarak bilinen network-layer packet'lerini bir host'tan diğerine taşımaktan sorumludur. 
+Source host'taki Internet transport-layer protocol'ü (TCP veya UDP), network layer'a bir transport-layer segment ve bir destination address iletir; tıpkı posta servisine destination address'li bir mektup vermeniz gibi.
+Network layer daha sonra destination host'taki transport layer'a segment'i teslim etme service'ini sağlar.
+
+Internet'in network layer'ı, datagram'daki field'ları ve end systems ile router'ların bu field'lara nasıl davrandığını tanımlayan ünlü **IP protocol**'ünü içerir. 
+Sadece **bir tane IP protocol** vardır ve network layer'a sahip olan tüm Internet component'leri IP protocol'ünü çalıştırmak zorundadır. 
+Internet'in network layer'ı ayrıca, datagram'ların source'lar ile destination'lar arasındaki route'larını belirleyen **routing protocols**'ü de içerir. 
+Internet'in birçok routing protocol'ü vardır. Önceden gördüğümüz gibi, Internet bir network of networks'tür ve bir network içinde, network administrator istediği herhangi bir routing protocol'ü çalıştırabilir. 
+Network layer hem IP protocol'ünü hem de sayısız routing protocol'ünü içerse de, genellikle basitçe **IP layer** olarak adlandırılır; bu, IP'nin Internet'i bir arada tutan **glue** (yapıştırıcı) olduğu gerçeğini yansıtır.
+
+## Link Layer
+
+Internet'in network layer'ı, source ile destination arasındaki bir dizi router üzerinden bir datagram'ı route eder.
+Bir packet'i bir node'dan (host veya router) route üzerindeki bir sonraki node'a taşımak için, network layer **link layer**'ın service'lerine güvenir. 
+Spesifik olarak, her node'da, network layer datagram'ı link layer'a iletir; link layer datagram'ı route boyunca bir sonraki node'a teslim eder. Bu bir sonraki node'da, link layer datagram'ı network layer'a iletir.
+
+Link layer tarafından sağlanan service'ler, link üzerinde kullanılan spesifik **link-layer protocol**'e bağlıdır. 
+Örneğin, bazı link-layer protocol'leri transmitting node'dan receiving node'ya, bir link üzerinden **reliable delivery** sağlar. 
+Bu reliable delivery service'nin, bir end system'dan diğerine reliable delivery sağlayan TCP'nin reliable delivery service'inden farklı olduğunu not edin. 
+Link-layer protocol'lerine örnekler arasında **Ethernet**, **WiFi** ve cable access network'ünün **DOCSIS protocol**'ü bulunur. 
+Datagram'lar source'dan destination'a gitmek için tipik olarak birkaç link'i traverse etmesi gerektiğinden, bir datagram route'undaki farklı link'lerde farklı link-layer protocol'leri tarafından işlenebilir. 
+Örneğin, bir datagram bir link'te WiFi tarafından ve bir sonraki link'te Ethernet tarafından işlenebilir. Network layer, farklı link-layer protocol'lerinden her birinden farklı bir service alacaktır. Yine aynı şekilde kitapta, link-layer packet'lerine **frame** deniliyor.
+
+## Physical Layer
+
+Link layer'ın görevi, bir network element'ten komşu bir network element'e **tüm frame'leri** taşımaktır. **Physical layer**'ın görevi ise, frame içindeki **individual bit'leri(bitleri tek-tek)** bir node'dan bir sonrakine taşımaktır. 
+Bu katmandaki protocol'ler yine link'e bağlıdır ve link'in actual transmission ortamına (örneğin twisted-pair copper wire, single-mode fiber optics) daha da bağlıdır. 
+Örneğin, Ethernet'in birçok physical-layer protocol'ü vardır: biri twisted-pair copper wire için, biri coaxial cable için, biri fiber için ve böyle devam eder. Her durumda, bir bit link üzerinden farklı bir şekilde taşınır.
+
